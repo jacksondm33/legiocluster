@@ -36,6 +36,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,6 +71,13 @@ workflow LEGIOCLUSTER {
         ch_input
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+
+    // TODO: Median genome length
+
+    RUN_TRIMMOMATIC (
+        INPUT_CHECK.out.reads
+    )
+    ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
 
     //
     // MODULE: Run FastQC
