@@ -8,12 +8,14 @@ process PARSE_TRIMMOMATIC_LOG {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(log)
+    tuple val(meta), path("trimlog.txt")
 
     output:
-    tuple val(meta), path("*_report.txt")  , emit: report
-    tuple val(meta), path("*_summary.txt") , emit: summary
-    path "versions.yml"                    , emit: versions
+    tuple val(meta), path("*_report.txt"), emit: report
+    tuple val(meta), path("*.log")       , emit: log
+    tuple val(meta), env(BOTH_SURVIVING) , emit: both_surviving
+    tuple val(meta), env(MAX_READ_LEN)   , emit: max_read_len
+    path "versions.yml"                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,12 +23,17 @@ process PARSE_TRIMMOMATIC_LOG {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_report.txt ${prefix}_summary.txt"
+    def output = "${prefix}_report.txt"
     """
     parse_trimmomatic_log.py \\
-        $log \\
+        trimlog.txt \\
         $output \\
-        $args
+        ${prefix}_summary.txt \\
+        $args \\
+        > ${prefix}.log
+
+    BOTH_SURVIVING=\$(cat ${prefix}_summary.txt | awk '{print \$1}')
+    MAX_READ_LEN=\$(cat ${prefix}_summary.txt | awk '{print \$2}')
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

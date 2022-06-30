@@ -12,25 +12,37 @@ process READ_REDUCER {
     val both_surviving
 
     output:
-    tuple val(meta), path("*_reduced_*.fq") , emit: reads
-    path "versions.yml"                     , emit: versions
+    tuple val(meta), path("*_reduced_*.fastq"), emit: reduced_reads
+    tuple val(meta), path("*.log")            , optional:true, emit: log
+    path "versions.yml"                       , optional:true, emit: versions
 
     when:
-    task.ext.when == null || task.ext.when && both_surviving > params.read_cutoff
+    task.ext.when == null || task.ext.when
 
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_reduced_1.fq ${prefix}_reduced_2.fq ${prefix}.log"
-    """
-    read_reducer.py \\
-        $reads \\
-        $output \\
-        $args
+    def output = "${prefix}_reduced_1.fastq ${prefix}_reduced_2.fastq"
+    if (both_surviving < params.min_reads) {
+        error "Not enough reads surviving after Trimmomatic."
+    }
+    if (both_surviving > params.read_cutoff) {
+        """
+        read_reducer.py \\
+            $reads \\
+            $output \\
+            $args \\
+            > ${prefix}.log
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python --version | sed 's/Python //g')
+        END_VERSIONS
+        """
+    } else {
+        """
+        cp ${reads[0]} ${output.split()[0]}
+        cp ${reads[1]} ${output.split()[1]}
+        """
+    }
 }

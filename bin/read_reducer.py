@@ -70,23 +70,12 @@ def fq_writer(outfile, lo_reads, lo_indices):
                 print(j, file=write_file)
 
 
-def write_to_log(log_file, text):
-    """
-    Writes text to the log file for record keeping.
-    param: str log_file = log file
-    param: str text = text to add to the log file
-    """
-    with open(log_file, 'a') as log:
-        print(text, file=log)
-
-
-def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, log_file, random, k, START, STOP):
+def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, random, k, START, STOP):
     """
     param: str reads_in_1 = input reads file 1
     param: str reads_in_2 = input reads file 2
     param: str reads_out_1 = output reads file 1
     param: str reads_out_2 = output reads file 2
-    param: str log_file = log file
     param: bool random: if True, selects k reads at random (w/o replacement);
            if False, use all reads between START and STOP
     param: int k = number of reads to select in random mode; if random=False,
@@ -142,18 +131,15 @@ def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, log_file, ran
     else:
         text_final = 'Could not complete writing files.'
 
-    # adding text to the log file
+    # logging text
     for text in ['\n\nRead reduction:', text_input, text_F_file, text_R_file,
                  text_indices, text_final]:
-        write_to_log(log_file, text)
+        logger.info(text)
 
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Reduce the number of reads (at random) after trimming with Trimmomatic.",
-        epilog="Example: python read_reducer.py all_reads_1.fq all_reads_2.fq reads_1.fq reads_2.fq sample.log",
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "reads_in_1",
         metavar="READS_IN_1",
@@ -177,12 +163,6 @@ def parse_args(argv=None):
         metavar="READS_OUT_2",
         type=Path,
         help="Output reads file 2",
-    )
-    parser.add_argument(
-        "log_file",
-        metavar="LOG_FILE",
-        type=Path,
-        help="Log file",
     )
     parser.add_argument(
         "--random",
@@ -234,9 +214,8 @@ def main(argv=None):
         sys.exit(2)
     args.reads_out_1.parent.mkdir(parents=True, exist_ok=True)
     args.reads_out_2.parent.mkdir(parents=True, exist_ok=True)
-    args.log_file.parent.mkdir(parents=True, exist_ok=True)
     read_reducer(args.reads_in_1, args.reads_in_2, args.reads_out_1, args.reads_out_2,
-                 args.log_file, args.random, args.k, args.start, args.stop)
+                 args.random, args.k, args.start, args.stop)
 
 
 if __name__ == "__main__":

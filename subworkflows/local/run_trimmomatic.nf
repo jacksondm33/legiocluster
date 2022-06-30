@@ -1,10 +1,8 @@
-//
-// Check input samplesheet and get read channels
-//
-
-include { TRIMMOMATIC } from '../../modules/nf-core/modules/trimmomatic/main'
+include { GUNZIP } from '../../modules/nf-core/modules/gunzip/main'
 include { REMOVE_POLY_GS } from '../../modules/local/remove_poly_gs'
+include { TRIMMOMATIC } from '../../modules/local/trimmomatic'
 include { PARSE_TRIMMOMATIC_LOG } from '../../modules/local/parse_trimmomatic_log'
+include { READ_REDUCER } from '../../modules/local/read_reducer'
 
 workflow RUN_TRIMMOMATIC {
     take:
@@ -13,36 +11,37 @@ workflow RUN_TRIMMOMATIC {
     main:
     ch_versions = Channel.empty()
 
-    REMOVE_POLY_GS (
-        reads
+    GUNZIP (
+        reads.transpose()
     )
-    ch_versions = ch_versions.mix(REMOVE_POLY_GS.out.versions)
+
+    REMOVE_POLY_GS (
+        GUNZIP.out.gunzip.groupTuple()
+    )
 
     TRIMMOMATIC (
-        REMOVE_POLY_GS.out.reads_nog
+        REMOVE_POLY_GS.out.nog_reads,
+        Channel.fromPath(params.nextera_pe)
     )
-    ch_verions = ch_versions.mix(TRIMMOMATIC.out.versions)
 
     PARSE_TRIMMOMATIC_LOG (
         TRIMMOMATIC.out.log
     )
-    ch_verions = ch_versions.mix(PARSE_TRIMMOMATIC_LOG.out.versions)
-
-    (both_surviving, max_read_len) = PARSE_TRIMMOMATIC_LOG.out.summary.splitText().collect()
-    if (both_surviving < params.min_reads) {
-        error "Not enough reads surviving after Trimmomatic."
-    }
 
     READ_REDUCER (
-        TRIMMOMATIC.out.trimmed_reads
-        both_surviving
+        TRIMMOMATIC.out.trimmed_reads,
+        PARSE_TRIMMOMATIC_LOG.out.both_surviving.map { meta, both_surviving -> both_surviving.toInteger() }
     )
-    ch_verions = ch_versions.mix(READ_REDUCER.out.versions)
+
+    // Collect versions
+    ch_versions = ch_versions.mix(GUNZIP.out.versions)
+    ch_versions = ch_versions.mix(REMOVE_POLY_GS.out.versions)
+    ch_versions = ch_versions.mix(TRIMMOMATIC.out.versions)
+    ch_versions = ch_versions.mix(PARSE_TRIMMOMATIC_LOG.out.versions)
+    ch_versions = ch_versions.mix(READ_REDUCER.out.versions)
 
     emit:
-    remove_poly_gs_log = REMOVE_POLY_GS.out.log
-    log = TRIMMOMATIC.out.log
-    report = PARSE_TRIMMOMATIC_LOG.out.report
-    reads = READ_REDUCER.out ? READ_REDUCER.out.reads : TRIMMOMATIC.out.trimmed_reads
+    reads = READ_REDUCER.out.reduced_reads
+    max_read_len = PARSE_TRIMMOMATIC_LOG.out.max_read_len
     versions = ch_versions // channel: [ versions.yml ]
 }

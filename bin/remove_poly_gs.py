@@ -59,7 +59,7 @@ def write_line(path_file, read):
             print(data, file=outfile)
 
 
-def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, log_file, xG):
+def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, xG):
     """
     Opens both read files simultaneuously, checks if either read sequence
       contains 25 or more Gs in a row (xG=25), and writes the reads to new
@@ -68,9 +68,8 @@ def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, log_file, x
     param: str reads_in_2 = input reads file 2
     param: str reads_out_1 = output reads file 1
     param: str reads_out_2 = output reads file 2
-    param: str log_file = log file
     param: int xG = remove reads with this many 'G's in a row
-    output: two new read files and a log file
+    output: two new read files
     """
     bad_read_count = 0
 
@@ -105,20 +104,13 @@ def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, log_file, x
             else:
                 bad_read_count += 1
 
-    print('\nDiscarded', bad_read_count, 'read pairs that contained >= '\
-          + str(xG) + ' Gs.\n')
-
-    with open(log_file, 'a') as log:
-        print('\nDiscarded', bad_read_count, 'read pairs that contained >= '\
-              + str(xG) + ' Gs.\n', file=log)
+    logger.info('\nDiscarded', bad_read_count, 'read pairs that contained >= '\
+                + str(xG) + ' Gs.\n')
 
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Remove poly Gs.",
-        epilog="Example: python remove_poly_gs.py reads_1.fq reads_2.fq reads_nog_1.fq reads_nog_2.fq sample.log",
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "reads_in_1",
         metavar="READS_IN_1",
@@ -142,12 +134,6 @@ def parse_args(argv=None):
         metavar="READS_OUT_2",
         type=Path,
         help="Output reads file 2",
-    )
-    parser.add_argument(
-        "log_file",
-        metavar="LOG_FILE",
-        type=Path,
-        help="Log file",
     )
     parser.add_argument(
         "--xg",
@@ -178,8 +164,7 @@ def main(argv=None):
         sys.exit(2)
     args.reads_out_1.parent.mkdir(parents=True, exist_ok=True)
     args.reads_out_2.parent.mkdir(parents=True, exist_ok=True)
-    args.log_file.parent.mkdir(parents=True, exist_ok=True)
-    remove_poly_Gs(args.reads_in_1, args.reads_in_2, args.reads_out_1, args.reads_out_2, args.log_file, args.xg)
+    remove_poly_Gs(args.reads_in_1, args.reads_in_2, args.reads_out_1, args.reads_out_2, args.xg)
 
 
 if __name__ == "__main__":

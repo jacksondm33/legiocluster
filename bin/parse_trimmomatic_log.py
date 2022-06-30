@@ -10,18 +10,18 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from statistics import mean, pstdev
 
 
 logger = logging.getLogger()
 
 
-def parse_log_file(log_file, report_file, summary_file):
+def parse_log_file(log_file, report_file):
     """
     Extracts data from the trimmomatic_log file and writes them to the report.
     param: str log_file = trimmomatic log file
     param: str report_file = output report file
-    param: str summary_file = output summary file
-    output: data added to report file and summary file
+    output: data added to report file
     """
 
     prev_read = ('', 0)    # name and trimmed length of the previous read
@@ -130,40 +130,34 @@ def parse_log_file(log_file, report_file, summary_file):
               sep='', file=report)
         print('Mean (SD) lengths of trimmed F reads:\t\t\t',\
               round(mean(lo_f_length_distr), 2), \
-              ' (', round(std(lo_f_length_distr), 3), ')',\
+              ' (', round(pstdev(lo_f_length_distr), 3), ')',\
               sep='', file=report)
         print('Mean (SD) lengths of trimmed R reads:\t\t\t',\
               round(mean(lo_r_length_distr), 2),\
-              ' (', round(std(lo_r_length_distr), 3), ')',\
+              ' (', round(pstdev(lo_r_length_distr), 3), ')',\
               sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of F reads(*):\t",\
               round(mean(lo_f_trim_5), 2),\
-              ' (', round(std(lo_f_trim_5), 3), ')', sep='', file=report)
+              ' (', round(pstdev(lo_f_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of R reads(*):\t",\
               round(mean(lo_r_trim_5), 2),\
-              ' (', round(std(lo_r_trim_5), 3), ')', sep='', file=report)
+              ' (', round(pstdev(lo_r_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of F reads(*):\t",\
               round(mean(lo_f_trim_3), 2),\
-              ' (', round(std(lo_f_trim_3), 3), ')', sep='', file=report)
+              ' (', round(pstdev(lo_f_trim_3), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of R reads(*):\t",\
               round(mean(lo_r_trim_3), 2),\
-              ' (', round(std(lo_r_trim_3), 3), ')', sep='', file=report)
+              ' (', round(pstdev(lo_r_trim_3), 3), ')', sep='', file=report)
         print('(*) if trimmed read length > 0', file=report)
 
     max_read_len = max(lo_f_length_distr)
 
-    # write data to summary file
-    with open(summary_file, 'a') as summary:
-        print(both_surviving, file=summary)
-        print(max_read_len, file=summary)
+    return both_surviving, max_read_len
 
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Parse trimmomatic log.",
-        epilog="Example: python parse_trimmomatic_log.py trimmomatic.log report.txt summary.txt",
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "log_file",
         metavar="LOG_FILE",
@@ -201,7 +195,9 @@ def main(argv=None):
         sys.exit(2)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
     args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_log_file(args.log_file, args.report_file, args.summary_file)
+    both_surviving, max_read_len = parse_log_file(args.log_file, args.report_file)
+    with open(args.summary_file, 'a') as summary:
+        print(both_surviving, max_read_len, file=summary)
 
 
 if __name__ == "__main__":
