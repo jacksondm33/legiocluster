@@ -1,4 +1,4 @@
-process REMOVE_POLY_GS {
+process PARSE_MASH_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,12 +8,16 @@ process REMOVE_POLY_GS {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(dist), path(report)
+    path species
+    val suffix
 
     output:
-    tuple val(meta), path("*_nog_*.fastq"), emit: nog_reads
-    tuple val(meta), path("*.log")        , emit: log
-    path "versions.yml"                   , emit: versions
+    tuple val(meta), path("*.log")    , emit: log
+    tuple val(meta), path(report)     , emit: report
+    tuple val(meta), env(MASH_SPECIES), emit: mash_species
+    tuple val(meta), env(PASSED_QC)   , emit: passed_qc
+    path "versions.yml"               , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,13 +25,18 @@ process REMOVE_POLY_GS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_nog_1.fastq ${prefix}_nog_2.fastq"
     """
-    remove_poly_gs.py \\
-        --reads-in $reads \\
-        --reads-out $output \\
+    parse_mash_output.py \\
+        --dist-file $dist \\
+        --report-file $report \\
+        --species-file $species \\
+        --suffix $suffix \\
+        --summary-file ${prefix}_summary.txt \\
         $args \\
         > ${prefix}.log
+
+    MASH_SPECIES=\$(cat ${prefix}_summary.txt | awk '{print \$1}')
+    PASSED_QC=\$(cat ${prefix}_summary.txt | awk '{print \$2}')
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

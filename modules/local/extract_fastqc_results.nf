@@ -1,4 +1,4 @@
-process REMOVE_POLY_GS {
+process EXTRACT_FASTQC_RESULTS {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,12 +8,12 @@ process REMOVE_POLY_GS {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(raw_reads), path(fastqc_results), path(report)
 
     output:
-    tuple val(meta), path("*_nog_*.fastq"), emit: nog_reads
-    tuple val(meta), path("*.log")        , emit: log
-    path "versions.yml"                   , emit: versions
+    tuple val(meta), path("*.log")       , emit: log
+    tuple val(meta), path(report)        , emit: report
+    path "versions.yml"                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,13 +21,20 @@ process REMOVE_POLY_GS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_nog_1.fastq ${prefix}_nog_2.fastq"
     """
-    remove_poly_gs.py \\
-        --reads-in $reads \\
-        --reads-out $output \\
+    extract_fastqc_results.py \\
+        --fastqc-results ${fastqc_results[0]} \\
+        --reads-file ${raw_reads[0]} \\
+        --report $report \\
         $args \\
         > ${prefix}.log
+
+    extract_fastqc_results.py \\
+        --fastqc-results ${fastqc_results[1]} \\
+        --reads-file ${raw_reads[1]} \\
+        --report $report \\
+        $args \\
+        >> ${prefix}.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

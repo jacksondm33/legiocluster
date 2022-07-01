@@ -71,6 +71,9 @@
             },
             "trimmomatic": {
                 "git_sha": "c1eb9cce44e0b5cdab6672ebfa2f8e8842d2aa86"
+            },
+            "unzip": {
+                "git_sha": "e080f4c8acf5760039ed12ec1f206170f3f9a918"
             }
         }
     }

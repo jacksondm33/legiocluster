@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 
-"""
-Opens both read files simultaneuously, checks if either read sequence
-  contains 25 or more Gs in a row (xG=25), and writes the reads to new
-  files if neither one does.
-"""
+"""Remove poly Gs."""
 
 
 import argparse
@@ -21,10 +17,11 @@ def get_header_symbol(file):
     """
     Returns the first character of the first line, which identifies the
       header of a read, ususally a "@".
-    helper function to remove_poly_Gs()
+    helper function to remove_poly_gs()
     param: str file = name of the read file
     return: str CHAR = first character of the header
     """
+
     with open(file, 'r') as infile:
         for line in infile:
             CHAR = line[0]
@@ -35,10 +32,11 @@ def read_line(path_file):
     """
     The yield converts the read file into an iterable item (like a list),
       returning one line at a time.
-    helper function to remove_poly_Gs()
+    helper function to remove_poly_gs()
     param: str path_file = path and filename of read file
     yield: one line at a time from the read file
     """
+
     with open(path_file, 'r') as infile:
         for line in infile:
             line = line.rstrip('\n')
@@ -49,37 +47,37 @@ def write_line(path_file, read):
     """
     Write one read at a time, spread over four lines:
         header, sequence, header, quality score.
-    helper function to remove_poly_Gs()
+    helper function to remove_poly_gs()
     param: str path_file = path and filename of the new read file
     param: list read = [header, sequence, header, quality score] = one read
     output: a new read file
     """
+
     with open(path_file, 'a') as outfile:
         for data in read:
             print(data, file=outfile)
 
 
-def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, xG):
+def remove_poly_gs(reads_in, reads_out, xG):
     """
     Opens both read files simultaneuously, checks if either read sequence
       contains 25 or more Gs in a row (xG=25), and writes the reads to new
       files if neither one does.
-    param: str reads_in_1 = input reads file 1
-    param: str reads_in_2 = input reads file 2
-    param: str reads_out_1 = output reads file 1
-    param: str reads_out_2 = output reads file 2
+    param: str reads_in = input reads files
+    param: str reads_out = output reads files
     param: int xG = remove reads with this many 'G's in a row
     output: two new read files
     """
+
     bad_read_count = 0
 
     # get the character that identifies the start of a read header, usually a
     #  '@', but not always
-    CHAR = get_header_symbol(reads_in_1)
+    CHAR = get_header_symbol(reads_in[0])
 
     # zip() reads both files, one line at a time, returns a tuple
-    for new_lines in zip(read_line(reads_in_1),
-                         read_line(reads_in_2)):
+    for new_lines in zip(read_line(reads_in[0]),
+                         read_line(reads_in[1])):
 
         line_1, line_2 = new_lines
 
@@ -99,8 +97,8 @@ def remove_poly_Gs(reads_in_1, reads_in_2, reads_out_1, reads_out_2, xG):
             and not ('G' * xG in R_read[1])\
             and not ('C' * xG in F_read[1])\
             and not ('C' * xG in R_read[1]):
-                write_line(reads_out_1, F_read)
-                write_line(reads_out_2, R_read)
+                write_line(reads_out[0], F_read)
+                write_line(reads_out[1], R_read)
             else:
                 bad_read_count += 1
 
@@ -112,28 +110,25 @@ def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "reads_in_1",
-        metavar="READS_IN_1",
+        "--reads-in",
+        metavar="READS_IN",
+        nargs=2,
         type=Path,
-        help="Input reads file 1",
+        help="Input reads files",
     )
     parser.add_argument(
-        "reads_in_2",
-        metavar="READS_IN_2",
+        "--reads-out",
+        metavar="READS_OUT",
+        nargs=2,
         type=Path,
-        help="Input reads file 2",
+        help="Output reads files",
     )
     parser.add_argument(
-        "reads_out_1",
-        metavar="READS_OUT_1",
-        type=Path,
-        help="Output reads file 1",
-    )
-    parser.add_argument(
-        "reads_out_2",
-        metavar="READS_OUT_2",
-        type=Path,
-        help="Output reads file 2",
+        "--log-level",
+        metavar="LOG_LEVEL",
+        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
+        help="The desired log level (default WARNING).",
+        default="WARNING",
     )
     parser.add_argument(
         "--xg",
@@ -142,13 +137,6 @@ def parse_args(argv=None):
         help="Remove reads with this many 'G's in a row",
         default=25,
     )
-    parser.add_argument(
-        "-l",
-        "--log-level",
-        help="The desired log level (default WARNING).",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        default="WARNING",
-    )
     return parser.parse_args(argv)
 
 
@@ -156,15 +144,15 @@ def main(argv=None):
     """Coordinate argument parsing and program execution."""
     args = parse_args(argv)
     logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.reads_in_1.is_file():
-        logger.error(f"The given input file {args.reads_in_1} was not found!")
+    if not args.reads_in[0].is_file():
+        logger.error(f"The given input file {args.reads_in[0]} was not found!")
         sys.exit(2)
-    if not args.reads_in_2.is_file():
-        logger.error(f"The given input file {args.reads_in_2} was not found!")
+    if not args.reads_in[1].is_file():
+        logger.error(f"The given input file {args.reads_in[1]} was not found!")
         sys.exit(2)
-    args.reads_out_1.parent.mkdir(parents=True, exist_ok=True)
-    args.reads_out_2.parent.mkdir(parents=True, exist_ok=True)
-    remove_poly_Gs(args.reads_in_1, args.reads_in_2, args.reads_out_1, args.reads_out_2, args.xg)
+    args.reads_out[0].parent.mkdir(parents=True, exist_ok=True)
+    args.reads_out[1].parent.mkdir(parents=True, exist_ok=True)
+    remove_poly_gs(args.reads_in, args.reads_out, args.xg)
 
 
 if __name__ == "__main__":

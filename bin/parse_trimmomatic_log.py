@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 
-"""
-Extracts data from the trimmomatic_log file and writes them to the report.
-"""
+"""Parse trimmomatic log."""
 
 
 import argparse
@@ -16,10 +14,10 @@ from statistics import mean, pstdev
 logger = logging.getLogger()
 
 
-def parse_log_file(log_file, report_file):
+def parse_trimmomatic_log(trimmomatic_log_file, report_file):
     """
-    Extracts data from the trimmomatic_log file and writes them to the report.
-    param: str log_file = trimmomatic log file
+    Extracts data from the trimmomatic log file and writes them to the report.
+    param: str trimmomatic_log_file = trimmomatic log file
     param: str report_file = output report file
     output: data added to report file
     """
@@ -40,8 +38,8 @@ def parse_log_file(log_file, report_file):
     lo_r_trim_5 = []       # lengths bases trimmed at 5' of reverse reads
     lo_r_trim_3 = []       # lengths bases trimmed at 3' of reverse reads
 
-    # extracts data from the log file
-    with open(log_file, 'r') as log:
+    # extracts data from the trimmomatic log file
+    with open(trimmomatic_log_file, 'r') as log:
         for line in log:
             line = line.rstrip('\n')
             line_content = line.split(' ')
@@ -159,28 +157,28 @@ def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "log_file",
-        metavar="LOG_FILE",
-        type=Path,
-        help="Trimmomatic log file",
-    )
-    parser.add_argument(
-        "report_file",
+        "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
     )
     parser.add_argument(
-        "summary_file",
+        "--summary-file",
         metavar="SUMMARY_FILE",
         type=Path,
         help="Output summary file",
     )
     parser.add_argument(
-        "-l",
+        "--trimmomatic-log-file",
+        metavar="TRIMMOMATIC_LOG_FILE",
+        type=Path,
+        help="Trimmomatic log file",
+    )
+    parser.add_argument(
         "--log-level",
-        help="The desired log level (default WARNING).",
+        metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
+        help="The desired log level (default WARNING).",
         default="WARNING",
     )
     return parser.parse_args(argv)
@@ -190,12 +188,12 @@ def main(argv=None):
     """Coordinate argument parsing and program execution."""
     args = parse_args(argv)
     logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.log_file.is_file():
-        logger.error(f"The given input file {args.log_file} was not found!")
+    if not args.trimmomatic_log_file.is_file():
+        logger.error(f"The given input file {args.trimmomatic_log_file} was not found!")
         sys.exit(2)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
     args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    both_surviving, max_read_len = parse_log_file(args.log_file, args.report_file)
+    both_surviving, max_read_len = parse_trimmomatic_log(args.trimmomatic_log_file, args.report_file)
     with open(args.summary_file, 'a') as summary:
         print(both_surviving, max_read_len, file=summary)
 

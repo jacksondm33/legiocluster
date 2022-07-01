@@ -36,7 +36,10 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { START_REPORT } from '../modules/local/start_report'
 include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
+include { RUN_FASTQC } from '../subworkflows/local/run_fastqc'
+include { RUN_MASH } from '../subworkflows/local/run_mash'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +50,6 @@ include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FASTQC                      } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
@@ -64,28 +66,36 @@ workflow LEGIOCLUSTER {
 
     ch_versions = Channel.empty()
 
-    //
-    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
-    //
     INPUT_CHECK (
         ch_input
     )
-    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    // TODO: Median genome length
+    START_REPORT (
+        INPUT_CHECK.out.reads
+    )
 
     RUN_TRIMMOMATIC (
-        INPUT_CHECK.out.reads
+        INPUT_CHECK.out.reads,
+        START_REPORT.out.report
     )
-    ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
 
-    //
-    // MODULE: Run FastQC
-    //
-    FASTQC (
-        INPUT_CHECK.out.reads
+    RUN_FASTQC (
+        INPUT_CHECK.out.reads,
+        RUN_TRIMMOMATIC.out.reads,
+        RUN_TRIMMOMATIC.out.report
     )
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+
+    RUN_MASH (
+        RUN_TRIMMOMATIC.out.reads,
+        RUN_FASTQC.out.report
+    )
+
+    // Collect versions
+    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+    ch_versions = ch_versions.mix(START_REPORT.out.versions)
+    ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
+    ch_versions = ch_versions.mix(RUN_FASTQC.out.versions)
+    ch_versions = ch_versions.mix(RUN_MASH.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
@@ -94,21 +104,21 @@ workflow LEGIOCLUSTER {
     //
     // MODULE: MultiQC
     //
-    workflow_summary    = WorkflowLegiocluster.paramsSummaryMultiqc(workflow, summary_params)
-    ch_workflow_summary = Channel.value(workflow_summary)
+    // workflow_summary    = WorkflowLegiocluster.paramsSummaryMultiqc(workflow, summary_params)
+    // ch_workflow_summary = Channel.value(workflow_summary)
 
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(Channel.from(ch_multiqc_config))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = Channel.empty()
+    // ch_multiqc_files = ch_multiqc_files.mix(Channel.from(ch_multiqc_config))
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
 
-    MULTIQC (
-        ch_multiqc_files.collect()
-    )
-    multiqc_report = MULTIQC.out.report.toList()
-    ch_versions    = ch_versions.mix(MULTIQC.out.versions)
+    // MULTIQC (
+    //     ch_multiqc_files.collect()
+    // )
+    // multiqc_report = MULTIQC.out.report.toList()
+    // ch_versions    = ch_versions.mix(MULTIQC.out.versions)
 }
 
 /*

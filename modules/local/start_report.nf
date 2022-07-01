@@ -1,6 +1,6 @@
-process REMOVE_POLY_GS {
+process START_REPORT {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_low'
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -11,9 +11,9 @@ process REMOVE_POLY_GS {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("*_nog_*.fastq"), emit: nog_reads
-    tuple val(meta), path("*.log")        , emit: log
-    path "versions.yml"                   , emit: versions
+    tuple val(meta), path("report.txt"), emit: report
+    tuple val(meta), path("*.log")     , emit: log
+    path "versions.yml"                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,11 +21,12 @@ process REMOVE_POLY_GS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_nog_1.fastq ${prefix}_nog_2.fastq"
     """
-    remove_poly_gs.py \\
-        --reads-in $reads \\
-        --reads-out $output \\
+    start_report.py \\
+        --isolate $meta.id \\
+        --reads $reads \\
+        --report-file report.txt \\
+        --sp-abbr $params.sp_abbr \\
         $args \\
         > ${prefix}.log
 

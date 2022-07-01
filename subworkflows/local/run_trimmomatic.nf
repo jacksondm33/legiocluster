@@ -2,11 +2,12 @@ include { GUNZIP } from '../../modules/nf-core/modules/gunzip/main'
 include { REMOVE_POLY_GS } from '../../modules/local/remove_poly_gs'
 include { TRIMMOMATIC } from '../../modules/local/trimmomatic'
 include { PARSE_TRIMMOMATIC_LOG } from '../../modules/local/parse_trimmomatic_log'
-include { READ_REDUCER } from '../../modules/local/read_reducer'
+include { REDUCE_READS } from '../../modules/local/reduce_reads'
 
 workflow RUN_TRIMMOMATIC {
     take:
     reads
+    report
 
     main:
     ch_versions = Channel.empty()
@@ -16,7 +17,7 @@ workflow RUN_TRIMMOMATIC {
     )
 
     REMOVE_POLY_GS (
-        GUNZIP.out.gunzip.groupTuple()
+        GUNZIP.out.gunzip.groupTuple(size: 2)
     )
 
     TRIMMOMATIC (
@@ -25,12 +26,11 @@ workflow RUN_TRIMMOMATIC {
     )
 
     PARSE_TRIMMOMATIC_LOG (
-        TRIMMOMATIC.out.log
+        TRIMMOMATIC.out.log.join(report)
     )
 
-    READ_REDUCER (
-        TRIMMOMATIC.out.trimmed_reads,
-        PARSE_TRIMMOMATIC_LOG.out.both_surviving.map { meta, both_surviving -> both_surviving.toInteger() }
+    REDUCE_READS (
+        TRIMMOMATIC.out.trimmed_reads.join(PARSE_TRIMMOMATIC_LOG.out.both_surviving)
     )
 
     // Collect versions
@@ -38,10 +38,11 @@ workflow RUN_TRIMMOMATIC {
     ch_versions = ch_versions.mix(REMOVE_POLY_GS.out.versions)
     ch_versions = ch_versions.mix(TRIMMOMATIC.out.versions)
     ch_versions = ch_versions.mix(PARSE_TRIMMOMATIC_LOG.out.versions)
-    ch_versions = ch_versions.mix(READ_REDUCER.out.versions)
+    ch_versions = ch_versions.mix(REDUCE_READS.out.versions)
 
     emit:
-    reads = READ_REDUCER.out.reduced_reads
+    reads = REDUCE_READS.out.reduced_reads
+    report = PARSE_TRIMMOMATIC_LOG.out.report
     max_read_len = PARSE_TRIMMOMATIC_LOG.out.max_read_len
     versions = ch_versions // channel: [ versions.yml ]
 }

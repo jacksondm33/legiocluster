@@ -8,11 +8,11 @@ process PARSE_TRIMMOMATIC_LOG {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path("trimlog.txt")
+    tuple val(meta), path("trimlog.txt"), path(report)
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
     tuple val(meta), path("*.log")       , emit: log
+    tuple val(meta), path(report)        , emit: report
     tuple val(meta), env(BOTH_SURVIVING) , emit: both_surviving
     tuple val(meta), env(MAX_READ_LEN)   , emit: max_read_len
     path "versions.yml"                  , emit: versions
@@ -23,12 +23,11 @@ process PARSE_TRIMMOMATIC_LOG {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_report.txt"
     """
     parse_trimmomatic_log.py \\
-        trimlog.txt \\
-        $output \\
-        ${prefix}_summary.txt \\
+        --report-file $report \\
+        --summary-file ${prefix}_summary.txt \\
+        --trimmomatic-log-file trimlog.txt \\
         $args \\
         > ${prefix}.log
 

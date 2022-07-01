@@ -1,4 +1,4 @@
-process READ_REDUCER {
+process REDUCE_READS {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,8 +8,7 @@ process READ_REDUCER {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(reads)
-    val both_surviving
+    tuple val(meta), path(reads), val(both_surviving)
 
     output:
     tuple val(meta), path("*_reduced_*.fastq"), emit: reduced_reads
@@ -23,14 +22,14 @@ process READ_REDUCER {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def output = "${prefix}_reduced_1.fastq ${prefix}_reduced_2.fastq"
-    if (both_surviving < params.min_reads) {
+    if (both_surviving.toInteger() < params.min_reads) {
         error "Not enough reads surviving after Trimmomatic."
     }
-    if (both_surviving > params.read_cutoff) {
+    if (both_surviving.toInteger() > params.read_cutoff) {
         """
-        read_reducer.py \\
-            $reads \\
-            $output \\
+        reduce_reads.py \\
+            --reads-in $reads \\
+            --reads-out $output \\
             $args \\
             > ${prefix}.log
 

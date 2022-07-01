@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 
-"""
-This module reduces the number of reads (at random) after trimming with
-Trimmomatic if there are too many reads as specified in the pipeline.
-"""
+"""Reduce reads."""
 
 
 import argparse
@@ -51,6 +48,7 @@ def make_lo_random_indices(N, k):
     param int k = unique numbers to draw out of N
     return list lo_indices = k numbers drawn from N, without replacement
     """
+
     lo_indices = random.sample([i for i in range(N)], k)
     return sorted(lo_indices)
 
@@ -64,18 +62,17 @@ def fq_writer(outfile, lo_reads, lo_indices):
     lo_reads = list of (header1, seq, header2, qual) tuples
     lo_indices = list of k numbers drawn from a population of size N
     """
+
     with open(outfile, 'a') as write_file:
         for i in lo_indices:
             for j in  lo_reads[i]:
                 print(j, file=write_file)
 
 
-def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, random, k, START, STOP):
+def reduce_reads(reads_in, reads_out, random, k, start, stop):
     """
-    param: str reads_in_1 = input reads file 1
-    param: str reads_in_2 = input reads file 2
-    param: str reads_out_1 = output reads file 1
-    param: str reads_out_2 = output reads file 2
+    param: str reads_in = input reads files
+    param: str reads_out = output reads files
     param: bool random: if True, selects k reads at random (w/o replacement);
            if False, use all reads between START and STOP
     param: int k = number of reads to select in random mode; if random=False,
@@ -85,8 +82,9 @@ def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, random, k, ST
     param: int STOP = upper limit, index of first read to be excluded
     output: a new file with fewer reads as the input file
     """
+
     # extracting reads from the forward read file and get total number of reads
-    lo_F_reads = fq_reader(reads_in_1)
+    lo_F_reads = fq_reader(reads_in[0])
     N = len(lo_F_reads)
     text_F_file = 'There are ' + str(N) + ' reads in the F-read file.'
 
@@ -117,16 +115,16 @@ def read_reducer(reads_in_1, reads_in_2, reads_out_1, reads_out_2, random, k, ST
             + ' indices from ' + str(N-k) + ' to ' + str(N)
 
     # write selected reads to file
-    fq_writer(reads_out_1, lo_F_reads, lo_indices)
+    fq_writer(reads_out[0], lo_F_reads, lo_indices)
 
     # extracting and writing the reverse reads using the same indices
-    lo_R_reads = fq_reader(reads_in_2)
+    lo_R_reads = fq_reader(reads_in[1])
     text_R_file = 'There are ' + str(len(lo_R_reads))\
     + ' reads in the R-read file.'
 
     # There should be the same number of reads in the F- and R-read file
     if len(lo_R_reads) == N:
-        fq_writer(reads_out_2, lo_R_reads, lo_indices)
+        fq_writer(reads_out[1], lo_R_reads, lo_indices)
         text_final = 'Writing new read files compete.'
     else:
         text_final = 'Could not complete writing files.'
@@ -141,35 +139,18 @@ def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "reads_in_1",
-        metavar="READS_IN_1",
+        "--reads-in",
+        metavar="READS_IN",
+        nargs=2,
         type=Path,
-        help="Input reads file 1",
+        help="Input reads files",
     )
     parser.add_argument(
-        "reads_in_2",
-        metavar="READS_IN_2",
+        "--reads-out",
+        metavar="READS_OUT",
+        nargs=2,
         type=Path,
-        help="Input reads file 2",
-    )
-    parser.add_argument(
-        "reads_out_1",
-        metavar="READS_OUT_1",
-        type=Path,
-        help="Output reads file 1",
-    )
-    parser.add_argument(
-        "reads_out_2",
-        metavar="READS_OUT_2",
-        type=Path,
-        help="Output reads file 2",
-    )
-    parser.add_argument(
-        "--random",
-        metavar="RANDOM",
-        type=bool,
-        help="Random",
-        default=False,
+        help="Output reads files",
     )
     parser.add_argument(
         "--k",
@@ -177,6 +158,20 @@ def parse_args(argv=None):
         type=int,
         help="k",
         default=0,
+    )
+    parser.add_argument(
+        "--log-level",
+        metavar="LOG_LEVEL",
+        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
+        help="The desired log level (default WARNING).",
+        default="WARNING",
+    )
+    parser.add_argument(
+        "--random",
+        metavar="RANDOM",
+        type=bool,
+        help="Random",
+        default=False,
     )
     parser.add_argument(
         "--start",
@@ -192,13 +187,6 @@ def parse_args(argv=None):
         help="Stop",
         default=999999999,
     )
-    parser.add_argument(
-        "-l",
-        "--log-level",
-        help="The desired log level (default WARNING).",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        default="WARNING",
-    )
     return parser.parse_args(argv)
 
 
@@ -206,16 +194,15 @@ def main(argv=None):
     """Coordinate argument parsing and program execution."""
     args = parse_args(argv)
     logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.reads_in_1.is_file():
-        logger.error(f"The given input file {args.reads_in_1} was not found!")
+    if not args.reads_in[0].is_file():
+        logger.error(f"The given input file {args.reads_in[0]} was not found!")
         sys.exit(2)
-    if not args.reads_in_2.is_file():
-        logger.error(f"The given input file {args.reads_in_2} was not found!")
+    if not args.reads_in[1].is_file():
+        logger.error(f"The given input file {args.reads_in[1]} was not found!")
         sys.exit(2)
-    args.reads_out_1.parent.mkdir(parents=True, exist_ok=True)
-    args.reads_out_2.parent.mkdir(parents=True, exist_ok=True)
-    read_reducer(args.reads_in_1, args.reads_in_2, args.reads_out_1, args.reads_out_2,
-                 args.random, args.k, args.start, args.stop)
+    args.reads_out[0].parent.mkdir(parents=True, exist_ok=True)
+    args.reads_out[1].parent.mkdir(parents=True, exist_ok=True)
+    reduce_reads(args.reads_in, args.reads_out, args.random, args.k, args.start, args.stop)
 
 
 if __name__ == "__main__":
