@@ -3,6 +3,7 @@ include { CONCATENATE                        } from '../../modules/local/concate
 include { MASH_SKETCH                        } from '../../modules/local/mash_sketch'
 include { MASH_DIST                          } from '../../modules/local/mash_dist'
 include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_mash_output'
+include { CHECK_MASH_OUTPUT                  } from '../../modules/local/check_mash_output'
 
 workflow RUN_MASH {
     take:
@@ -32,6 +33,10 @@ workflow RUN_MASH {
     PARSE_MASH_OUTPUT (
         MASH_DIST.out.dist,
         Channel.of(params.species.collect { sp_abbr, info -> sp_abbr + ',' + info[0] }).flatten().collectFile(name: "species.csv", newLine: true, sort: true)
+    )
+
+    CHECK_MASH_OUTPUT (
+        PARSE_MASH_OUTPUT.out.mash_species.join(PARSE_MASH_OUTPUT.out.passed_qc)
     )
 
     // Collect reports
