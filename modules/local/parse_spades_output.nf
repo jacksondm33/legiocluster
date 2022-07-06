@@ -1,17 +1,18 @@
-process CALCULATE_COVERAGE {
+process PARSE_SPADES_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
+    conda (params.enable_conda ? "conda-forge::matplotlib=3.1.2" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"
+        'https://depot.galaxyproject.org/singularity/matplotlib:3.1.2' :
+        'quay.io/biocontainers/matplotlib:3.1.2' }"
 
     input:
-    tuple val(meta), path(reads), path(fastqc_results)
+    tuple val(meta), path(contigs)
 
     output:
     tuple val(meta), path("*_report.txt"), emit: report
+    tuple val(meta), path("*.png")       , emit: plots
     tuple val(meta), path("*.log")       , emit: log
     path "versions.yml"                  , emit: versions
 
@@ -22,9 +23,13 @@ process CALCULATE_COVERAGE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    calculate_coverage.py \\
-        --fastqc-results ${fastqc_results[1]} \\
-        --reads-file ${reads[1]} \\
+    parse_spades_output.py \\
+        --contigs-file $contigs \\
+        --contig-len-dist-file ${prefix}_contig_len_dist.png \\
+        --contig-cov-dist-file ${prefix}_contig_cov_dist.png \\
+        --contig-len-x-cov-dist-file ${prefix}_Ampel_dist.png \\
+        --contig-ind-len-file ${prefix}_plot_contig_len.png \\
+        --contig-ind-cov-file ${prefix}_plot_contig_cov.png \\
         --report-file ${prefix}_report.txt \\
         $args \\
         > ${prefix}.log

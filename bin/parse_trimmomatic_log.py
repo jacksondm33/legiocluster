@@ -14,7 +14,7 @@ from statistics import fmean, pstdev
 logger = logging.getLogger()
 
 
-def parse_trimmomatic_log(trimmomatic_log_file, report_file):
+def parse_trimmomatic_log(trimmomatic_log_file, report_file, min_reads):
     """
     Extracts data from the trimmomatic log file and writes them to the report.
     param: str trimmomatic_log_file = trimmomatic log file
@@ -150,12 +150,22 @@ def parse_trimmomatic_log(trimmomatic_log_file, report_file):
 
     max_read_len = max(lo_f_length_distr)
 
+    if both_surviving < min_reads:
+        logger.error("Not enough reads surviving after Trimmomatic.")
+        sys.exit(2)
+
     return both_surviving, max_read_len
 
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--min-reads",
+        metavar="MIN_READS",
+        type=int,
+        help="Minimum reads",
+    )
     parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
@@ -193,7 +203,7 @@ def main(argv=None):
         sys.exit(2)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
     args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    both_surviving, max_read_len = parse_trimmomatic_log(args.trimmomatic_log_file, args.report_file)
+    both_surviving, max_read_len = parse_trimmomatic_log(args.trimmomatic_log_file, args.report_file, args.min_reads)
     with open(args.summary_file, 'a') as summary:
         print(both_surviving, max_read_len, file=summary)
 

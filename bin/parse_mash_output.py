@@ -205,8 +205,6 @@ def parse_mash_output(dist_file, species_file, sp_abbr, suffix, report_file):
     param: str sp_abbr = species abbreviation
     param: str suffix = 'RvSp' or 'FAvNCBI'
     param: str report_file = output report file
-    return: mash_species = closest species
-    return: bool passed_qc = True if distance and p-value are below thresholds
     output: writes reference_ID, Mash_distance, P_value, Matching_hashes to
             file, e.g.: [('IDR00123', 0.0293323, 0.0, '182/400')
                          ('IDR00456', 0.0293323, 0.0, '182/400')
@@ -304,7 +302,13 @@ def parse_mash_output(dist_file, species_file, sp_abbr, suffix, report_file):
         mash_species = 'Cbo'
         passed_qc = True
 
-    return mash_species, passed_qc
+    if not passed_qc:
+        logger.error("The reads did not pass the Mash QC check.")
+        sys.exit(2)
+
+    if mash_species != sp_abbr:
+        logger.error("The reads did not pass the Mash species check.")
+        sys.exit(2)
 
 
 def parse_args(argv=None):
@@ -339,12 +343,6 @@ def parse_args(argv=None):
         help="Suffix",
     )
     parser.add_argument(
-        "--summary-file",
-        metavar="SUMMARY_FILE",
-        type=Path,
-        help="Output summary file",
-    )
-    parser.add_argument(
         "--log-level",
         metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
@@ -365,10 +363,7 @@ def main(argv=None):
         logger.error(f"The given input file {args.species_file} was not found!")
         sys.exit(2)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    mash_species, passed_qc = parse_mash_output(args.dist_file, args.species_file, args.sp_abbr, args.suffix, args.report_file)
-    with open(args.summary_file, 'a') as summary:
-        print(mash_species, passed_qc, file=summary)
+    parse_mash_output(args.dist_file, args.species_file, args.sp_abbr, args.suffix, args.report_file)
 
 
 if __name__ == "__main__":

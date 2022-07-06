@@ -21,7 +21,6 @@ def calculate_coverage(reads_file, fastqc_results, med_genome_len, report_file):
     param: str fastqc_results = name of directory with fastqc results
     param: int med_genome_len = median genome length for that species
     param: str report_file = output report file
-    return: int coverage = read coverage per base
     """
 
     # extracts the data from the FastQC results file, 'fastqc_data.txt'
@@ -45,8 +44,6 @@ def calculate_coverage(reads_file, fastqc_results, med_genome_len, report_file):
               + ' * 2) / ' + str(med_genome_len) + ' = ' + str(coverage),
               file=report)
 
-    return coverage
-
 
 def calculate_perc_ge_q30(reads_file, fastqc_results, report_file):
     """
@@ -55,7 +52,6 @@ def calculate_perc_ge_q30(reads_file, fastqc_results, report_file):
            processed by Trimmomatic
     param: str fastqc_results = name of directory with fastqc results
     param: str report_file = output report file
-    return: float perc_ge_Q30 = percentage greater than or equal to Q30
     """
 
     n_ge_Q30 = 0  # number of bases with quality score >= Q30
@@ -92,8 +88,6 @@ def calculate_perc_ge_q30(reads_file, fastqc_results, report_file):
               + str(n_ge_Q30) + ' * 100) / ' + str(n_all) + ' = '\
               + str(perc_ge_Q30) + '\n', file=report)
 
-    return perc_ge_Q30
-
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
@@ -123,12 +117,6 @@ def parse_args(argv=None):
         help="Output report file",
     )
     parser.add_argument(
-        "--summary-file",
-        metavar="SUMMARY_FILE",
-        type=Path,
-        help="Output summary file",
-    )
-    parser.add_argument(
         "--log-level",
         metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
@@ -149,11 +137,8 @@ def main(argv=None):
         logger.error(f"The given input directory {args.fastqc_results} was not found!")
         sys.exit(2)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    coverage = calculate_coverage(args.reads_file, args.fastqc_results, args.med_genome_len, args.report_file)
-    perc_ge_q30 = calculate_perc_ge_q30(args.reads_file, args.fastqc_results, args.report_file)
-    with open(args.summary_file, 'a') as summary:
-        print(coverage, perc_ge_q30, file=summary)
+    calculate_coverage(args.reads_file, args.fastqc_results, args.med_genome_len, args.report_file)
+    calculate_perc_ge_q30(args.reads_file, args.fastqc_results, args.report_file)
 
 
 if __name__ == "__main__":

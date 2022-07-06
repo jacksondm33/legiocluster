@@ -13,8 +13,6 @@ process PARSE_MASH_OUTPUT {
 
     output:
     tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), env(MASH_SPECIES)   , emit: mash_species
-    tuple val(meta), env(PASSED_QC)      , emit: passed_qc
     tuple val(meta), path("*.log")       , emit: log
     path "versions.yml"                  , emit: versions
 
@@ -29,12 +27,8 @@ process PARSE_MASH_OUTPUT {
         --dist-file $dist \\
         --report-file ${prefix}_report.txt \\
         --species-file $species \\
-        --summary-file ${prefix}_summary.txt \\
         $args \\
         > ${prefix}.log
-
-    MASH_SPECIES=\$(cat ${prefix}_summary.txt | awk '{print \$1}')
-    PASSED_QC=\$(cat ${prefix}_summary.txt | awk '{print \$2}')
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -1,4 +1,4 @@
-process CALCULATE_COVERAGE {
+process FILTER_CONTIGS {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,12 +8,12 @@ process CALCULATE_COVERAGE {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(reads), path(fastqc_results)
+    tuple val(meta), path(contigs)
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path("*_contigs_filtered.fastq"), emit: filtered_contigs
+    tuple val(meta), path("*.log")                   , emit: log
+    path "versions.yml"                              , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,11 +21,11 @@ process CALCULATE_COVERAGE {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def output = "${prefix}_contigs_filtered.fastq"
     """
-    calculate_coverage.py \\
-        --fastqc-results ${fastqc_results[1]} \\
-        --reads-file ${reads[1]} \\
-        --report-file ${prefix}_report.txt \\
+    filter_contigs.py \\
+        --contigs-in $contigs \\
+        --contigs-out $output \\
         $args \\
         > ${prefix}.log
 
