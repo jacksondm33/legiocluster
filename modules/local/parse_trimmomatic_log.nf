@@ -8,13 +8,13 @@ process PARSE_TRIMMOMATIC_LOG {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path("trimlog.txt"), path(report)
+    tuple val(meta), path("trimlog.txt")
 
     output:
-    tuple val(meta), path("*.log")       , emit: log
-    tuple val(meta), path(report)        , emit: report
+    tuple val(meta), path("*_report.txt"), emit: report
     tuple val(meta), env(BOTH_SURVIVING) , emit: both_surviving
     tuple val(meta), env(MAX_READ_LEN)   , emit: max_read_len
+    tuple val(meta), path("*.log")       , emit: log
     path "versions.yml"                  , emit: versions
 
     when:
@@ -25,7 +25,7 @@ process PARSE_TRIMMOMATIC_LOG {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     parse_trimmomatic_log.py \\
-        --report-file $report \\
+        --report-file ${prefix}_report.txt \\
         --summary-file ${prefix}_summary.txt \\
         --trimmomatic-log-file trimlog.txt \\
         $args \\

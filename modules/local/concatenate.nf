@@ -1,5 +1,5 @@
-process CONCATENATE_READS {
-    tag "$archive"
+process CONCATENATE {
+    tag "$meta.id"
     label 'process_low'
 
     conda (params.enable_conda ? "conda-forge::sed=4.7" : null)
@@ -8,21 +8,22 @@ process CONCATENATE_READS {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(files)
 
     output:
-    tuple val(meta), path("comb_reads.fastq"), emit: comb_reads
+    tuple val(meta), path("*_cat.fastq"), emit: cat
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def output = "comb_reads.fastq"
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def output = "${prefix}_cat.fastq"
     """
     cat \\
-        $reads \\
         $args \\
+        $files \\
         > $output
     """
 }

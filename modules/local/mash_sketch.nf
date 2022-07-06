@@ -20,20 +20,19 @@ process MASH_SKETCH {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def param = '-m 2 -k 16 -s 400'
+    def output = "${prefix}.msh"
     """
     mash \\
         sketch \\
         -p $task.cpus \\
-        -o ${prefix}.msh \\
-        $param \\
+        -o $output \\
         $args \\
         $reads \\
         > ${prefix}.log
 
     mash \\
         info \\
-        ${prefix}.msh \\
+        $output \\
         >> ${prefix}.log
 
     cat <<-END_VERSIONS > versions.yml

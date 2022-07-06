@@ -11,9 +11,9 @@ process REDUCE_READS {
     tuple val(meta), path(reads), val(both_surviving)
 
     output:
-    tuple val(meta), path("*_reduced_*.fastq"), emit: reduced_reads
-    tuple val(meta), path("*.log")            , optional:true, emit: log
-    path "versions.yml"                       , optional:true, emit: versions
+    tuple val(meta), path("*_reduced.fastq"), emit: reduced_reads
+    tuple val(meta), path("*.log")          , optional:true, emit: log
+    path "versions.yml"                     , optional:true, emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,7 +21,7 @@ process REDUCE_READS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_reduced_1.fastq ${prefix}_reduced_2.fastq"
+    def output = "${prefix}_1_reduced.fastq ${prefix}_2_reduced.fastq"
     if (both_surviving.toInteger() < params.min_reads) {
         error "Not enough reads surviving after Trimmomatic."
     }

@@ -23,7 +23,11 @@ process FASTQC {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    fastqc $args --threads $task.cpus $reads > ${prefix}.log
+    fastqc \\
+        --threads $task.cpus \\
+        $args \\
+        $reads \\
+        > ${prefix}.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

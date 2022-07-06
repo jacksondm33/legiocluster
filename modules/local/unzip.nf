@@ -8,24 +8,31 @@ process UNZIP {
         'quay.io/biocontainers/p7zip:15.09--h2d50403_4' }"
 
     input:
-    tuple val(meta), path(archive)
+    tuple val(meta), path(archives)
 
     output:
-    tuple val(meta), path("${archive.baseName}/"), emit: unzipped_archive
-    path "versions.yml"                          , emit: versions
+    tuple val(meta), path("*_unzipped", type: 'dir'), emit: unzipped_archives
+    path "versions.yml"                             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    if ( archive instanceof List && archive.name.size > 1 ) { exit 1, "[UNZIP] error: 7za only accepts a single archive as input. Please check module input." }
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def output = "${prefix}_1_unzipped ${prefix}_2_unzipped"
     """
     7za \\
         e \\
-        -o"${archive.baseName}"/ \\
+        -o${output.split()[0]}/ \\
         $args \\
-        $archive
+        ${archives[0]}
+
+    7za \\
+        e \\
+        -o${output.split()[1]}/ \\
+        $args \\
+        ${archives[1]}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

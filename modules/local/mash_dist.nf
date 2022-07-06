@@ -21,13 +21,15 @@ process MASH_DIST {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def output = "${prefix}.txt"
     """
     mash \\
         dist \\
         -p $task.cpus \\
         $args \\
         $reference \\
-        $query > ${prefix}.txt
+        $query \\
+        > $output
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

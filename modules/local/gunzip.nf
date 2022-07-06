@@ -8,10 +8,10 @@ process GUNZIP {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path(archive)
+    tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("$gunzip"), emit: gunzip
+    tuple val(meta), path("*.fastq"), emit: unzipped_reads
     path "versions.yml"             , emit: versions
 
     when:
@@ -19,12 +19,11 @@ process GUNZIP {
 
     script:
     def args = task.ext.args ?: ''
-    gunzip = archive.toString() - '.gz'
     """
     gunzip \\
         -f \\
         $args \\
-        $archive
+        $reads
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -8,16 +8,15 @@ process PARSE_MASH_OUTPUT {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(dist), path(report)
+    tuple val(meta), path(dist)
     path species
-    val suffix
 
     output:
-    tuple val(meta), path("*.log")    , emit: log
-    tuple val(meta), path(report)     , emit: report
-    tuple val(meta), env(MASH_SPECIES), emit: mash_species
-    tuple val(meta), env(PASSED_QC)   , emit: passed_qc
-    path "versions.yml"               , emit: versions
+    tuple val(meta), path("*_report.txt"), emit: report
+    tuple val(meta), env(MASH_SPECIES)   , emit: mash_species
+    tuple val(meta), env(PASSED_QC)      , emit: passed_qc
+    tuple val(meta), path("*.log")       , emit: log
+    path "versions.yml"                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -28,9 +27,8 @@ process PARSE_MASH_OUTPUT {
     """
     parse_mash_output.py \\
         --dist-file $dist \\
-        --report-file $report \\
+        --report-file ${prefix}_report.txt \\
         --species-file $species \\
-        --suffix $suffix \\
         --summary-file ${prefix}_summary.txt \\
         $args \\
         > ${prefix}.log

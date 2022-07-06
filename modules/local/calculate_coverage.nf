@@ -8,13 +8,13 @@ process CALCULATE_COVERAGE {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(proc_reads), path(fastqc_results), path(report)
+    tuple val(meta), path(reads), path(fastqc_results)
 
     output:
-    tuple val(meta), path("*.log")       , emit: log
-    tuple val(meta), path(report)        , emit: report
+    tuple val(meta), path("*_report.txt"), emit: report
     tuple val(meta), env(COVERAGE)       , emit: coverage
     tuple val(meta), env(PERC_GE_Q30)    , emit: perc_ge_q30
+    tuple val(meta), path("*.log")       , emit: log
     path "versions.yml"                  , emit: versions
 
     when:
@@ -27,8 +27,8 @@ process CALCULATE_COVERAGE {
     calculate_coverage.py \\
         --fastqc-results ${fastqc_results[1]} \\
         --med-genome-len $params.med_genome_len \\
-        --reads-file ${proc_reads[1]} \\
-        --report-file $report \\
+        --reads-file ${reads[1]} \\
+        --report-file ${prefix}_report.txt \\
         --summary-file ${prefix}_summary.txt \\
         $args \\
         > ${prefix}.log

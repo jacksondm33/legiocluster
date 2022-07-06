@@ -36,7 +36,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
-include { START_REPORT } from '../modules/local/start_report'
 include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
 include { RUN_FASTQC } from '../subworkflows/local/run_fastqc'
 include { RUN_MASH } from '../subworkflows/local/run_mash'
@@ -52,6 +51,7 @@ include { RUN_MASH } from '../subworkflows/local/run_mash'
 //
 include { MULTIQC                     } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { CREATE_REPORT               } from '../modules/local/create_report'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,35 +64,37 @@ def multiqc_report = []
 
 workflow LEGIOCLUSTER {
 
+    ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
     INPUT_CHECK (
         ch_input
     )
 
-    START_REPORT (
-        INPUT_CHECK.out.reads
-    )
-
     RUN_TRIMMOMATIC (
-        INPUT_CHECK.out.reads,
-        START_REPORT.out.report
+        INPUT_CHECK.out.reads
     )
 
     RUN_FASTQC (
         INPUT_CHECK.out.reads,
-        RUN_TRIMMOMATIC.out.reads,
-        RUN_TRIMMOMATIC.out.report
+        RUN_TRIMMOMATIC.out.reads
     )
 
     RUN_MASH (
-        RUN_TRIMMOMATIC.out.reads,
-        RUN_FASTQC.out.report
+        RUN_TRIMMOMATIC.out.reads
+    )
+
+    // Collect reports
+    ch_reports = ch_reports.concat(RUN_TRIMMOMATIC.out.reports)
+    ch_reports = ch_reports.concat(RUN_FASTQC.out.reports)
+    ch_reports = ch_reports.concat(RUN_MASH.out.reports)
+
+    CREATE_REPORT (
+        ch_reports.groupTuple().join(INPUT_CHECK.out.reads)
     )
 
     // Collect versions
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-    ch_versions = ch_versions.mix(START_REPORT.out.versions)
     ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
     ch_versions = ch_versions.mix(RUN_FASTQC.out.versions)
     ch_versions = ch_versions.mix(RUN_MASH.out.versions)
