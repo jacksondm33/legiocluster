@@ -8,7 +8,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from statistics import mean, pstdev
+from statistics import fmean, pstdev
 
 
 logger = logging.getLogger()
@@ -127,24 +127,24 @@ def parse_trimmomatic_log(trimmomatic_log_file, report_file):
               ' (', round(dropped*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
         print('Mean (SD) lengths of trimmed F reads:\t\t\t',\
-              round(mean(lo_f_length_distr), 2), \
+              round(fmean(lo_f_length_distr), 2), \
               ' (', round(pstdev(lo_f_length_distr), 3), ')',\
               sep='', file=report)
         print('Mean (SD) lengths of trimmed R reads:\t\t\t',\
-              round(mean(lo_r_length_distr), 2),\
+              round(fmean(lo_r_length_distr), 2),\
               ' (', round(pstdev(lo_r_length_distr), 3), ')',\
               sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of F reads(*):\t",\
-              round(mean(lo_f_trim_5), 2),\
+              round(fmean(lo_f_trim_5), 2),\
               ' (', round(pstdev(lo_f_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of R reads(*):\t",\
-              round(mean(lo_r_trim_5), 2),\
+              round(fmean(lo_r_trim_5), 2),\
               ' (', round(pstdev(lo_r_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of F reads(*):\t",\
-              round(mean(lo_f_trim_3), 2),\
+              round(fmean(lo_f_trim_3), 2),\
               ' (', round(pstdev(lo_f_trim_3), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of R reads(*):\t",\
-              round(mean(lo_r_trim_3), 2),\
+              round(fmean(lo_r_trim_3), 2),\
               ' (', round(pstdev(lo_r_trim_3), 3), ')', sep='', file=report)
         print('(*) if trimmed read length > 0', file=report)
 
