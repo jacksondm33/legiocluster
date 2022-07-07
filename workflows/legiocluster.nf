@@ -35,7 +35,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { CHECK_INPUT } from '../subworkflows/local/check_input'
 include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
 include { RUN_FASTQC } from '../subworkflows/local/run_fastqc'
 include { RUN_MASH_FQ } from '../subworkflows/local/run_mash_fq'
@@ -69,16 +69,16 @@ workflow LEGIOCLUSTER {
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
-    INPUT_CHECK (
+    CHECK_INPUT (
         ch_input
     )
 
     RUN_TRIMMOMATIC (
-        INPUT_CHECK.out.reads
+        CHECK_INPUT.out.reads
     )
 
     RUN_FASTQC (
-        INPUT_CHECK.out.reads,
+        CHECK_INPUT.out.reads,
         RUN_TRIMMOMATIC.out.reads
     )
 
@@ -104,11 +104,11 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(RUN_MASH_FA.out.reports)
 
     CREATE_REPORT (
-        ch_reports.groupTuple().join(INPUT_CHECK.out.reads)
+        ch_reports.groupTuple().join(CHECK_INPUT.out.reads)
     )
 
     // Collect versions
-    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+    ch_versions = ch_versions.mix(CHECK_INPUT.out.versions)
     ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
     ch_versions = ch_versions.mix(RUN_FASTQC.out.versions)
     ch_versions = ch_versions.mix(RUN_MASH_FQ.out.versions)

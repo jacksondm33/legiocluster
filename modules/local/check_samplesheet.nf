@@ -1,4 +1,4 @@
-process SAMPLESHEET_CHECK {
+process CHECK_SAMPLESHEET {
     tag "$samplesheet"
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
@@ -16,8 +16,8 @@ process SAMPLESHEET_CHECK {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     """
     check_samplesheet.py \\
-        $samplesheet \\
-        samplesheet.valid.csv
+        --file-in $samplesheet \\
+        --file-out samplesheet_valid.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

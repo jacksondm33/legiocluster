@@ -224,22 +224,24 @@ def parse_args(argv=None):
         epilog="Example: python check_samplesheet.py samplesheet.csv samplesheet.valid.csv",
     )
     parser.add_argument(
-        "file_in",
+        "--file-in",
         metavar="FILE_IN",
         type=Path,
         help="Tabular input samplesheet in CSV or TSV format.",
+        required=True,
     )
     parser.add_argument(
-        "file_out",
+        "--file-out",
         metavar="FILE_OUT",
         type=Path,
         help="Transformed output samplesheet in CSV format.",
+        required=True,
     )
     parser.add_argument(
-        "-l",
         "--log-level",
-        help="The desired log level (default WARNING).",
+        metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
+        help="The desired log level (default WARNING).",
         default="WARNING",
     )
     return parser.parse_args(argv)
