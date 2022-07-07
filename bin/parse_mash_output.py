@@ -101,16 +101,22 @@ def read_distance_file(dist_file):
     return sorted(lo_refs)
 
 
-def write_to_file(report_file, lo_refs, lo_sm_dist, do_species, header_text, suffix):
+def write_references_file(references_file, lo_min_dist_refs):
+    with open(references_file, 'a', newline='') as references:
+        references_writer = csv.writer(references)
+        for ref in lo_min_dist_refs:
+            references_writer.writerow(ref)
+
+
+def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
     """
     Write Mash results to report file.
       helper function to parse_mash_output()
     param: str report_file = output report file
     param: list lo_refs = Mash_result objects sorted by distance
     param: list lo_sm_dist = list of references with the smallest Mast distances
-    param: dict do_species = dict of species abbreviations mapped to names
     param: str header_text = header text for the report.txt
-    param: str suffix = 'RvSp' or 'FAvNCBI'
+    param: dict do_species = dict of species abbreviations mapped to names
     output: text written to file
     """
 
@@ -138,7 +144,7 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, do_species, header_text, suf
                       file=report)
 
                 # extract the species name in case of the contamination check
-                if suffix == 'RvSp':
+                if do_species is not None:
                     tent_species = do_species.get(lo_sm_dist[i].get_reference(),
                                                   'UNKNOWN SPECIES')
                     print('These reads seem to have come from:', tent_species, \
@@ -189,7 +195,7 @@ def check_quality(ref_object, report_file):
     return passed_qc
 
 
-def parse_mash_output(dist_file, species_file, sp_abbr, suffix, report_file):
+def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_file):
     """
     Parses a distances file and returns a list of Mash_result objects of
       those references that have the shortest distance (one or more), and the
@@ -201,17 +207,14 @@ def parse_mash_output(dist_file, species_file, sp_abbr, suffix, report_file):
       found that is outside the reasonable range of the smallest distance;
       this reference will also be printed to file for comparison.
     param: str dist_file = name of TAB file produced by mash dist
-    param: str species_file = input species file
     param: str sp_abbr = species abbreviation
-    param: str suffix = 'RvSp' or 'FAvNCBI'
     param: str report_file = output report file
+    param: str species_file = input species file
     output: writes reference_ID, Mash_distance, P_value, Matching_hashes to
             file, e.g.: [('IDR00123', 0.0293323, 0.0, '182/400')
                          ('IDR00456', 0.0293323, 0.0, '182/400')
                          ('IDR00789', 0.034976,  0.0, '160/400')]
     """
-
-    do_species = read_species_file(species_file)
 
     lo_sm_dist = []
 
@@ -268,47 +271,55 @@ def parse_mash_output(dist_file, species_file, sp_abbr, suffix, report_file):
                             lo_sm_dist]
 
     # writes results to the log and report files
-    if suffix == 'RvSp':
-        write_to_file(report_file, lo_refs, lo_sm_dist, do_species,
-                      '\nContamination check (Mash):', suffix)
+    if species_file is not None:
+        do_species = read_species_file(species_file)
+        write_to_file(report_file, lo_refs, lo_sm_dist,
+                      '\nContamination check (Mash):', do_species)
     else:
-        write_to_file(report_file, lo_refs, lo_sm_dist, do_species,
-                      '\nFinding a reference strain (Mash):', suffix)
+        write_to_file(report_file, lo_refs, lo_sm_dist,
+                      '\nFinding a reference strain (Mash):', None)
 
     # checks that the distance and p-value are below threshold; if not, the
     #  sample might be contaminated or the reference a poor choice
     passed_qc = check_quality(lo_sm_dist[0], report_file)
     logger.info('Mash passed QC:', passed_qc)
 
-    # the species based on the Mash data
-    mash_species = lo_min_dist_refs[0][:-3]
+    if species_file is not None:
+        # the species based on the Mash data
+        mash_species = lo_min_dist_refs[0][:-3]
 
-    # over-riding the species check
-    # sometimes the lab only provides the info that an isolate belongs to a
-    #  "complex" without giving the exact species, the code below allows for
-    #  this kind of uncertainty when doing the species check with Mash
-    if sp_abbr == 'Spy' and mash_species == 'Sdy':
-        mash_species = 'Spy'
-        passed_qc = True
-    elif sp_abbr == 'Cro' and mash_species in ['Cco','Cdu','Cma','Cmu',
-                                               'Csa','Ctu','Cun']:
-        mash_species = 'Cro'
-        passed_qc = True
-    elif sp_abbr == 'Ecl' and mash_species in ['Eas','Eca','Ecl','Ehh',
-                                               'Eho','Eko','Elu','Ero']:
-        mash_species = 'Ecl'
-        passed_qc = True
-    elif sp_abbr == 'Cbo':
-        mash_species = 'Cbo'
-        passed_qc = True
+        # over-riding the species check
+        # sometimes the lab only provides the info that an isolate belongs to a
+        #  "complex" without giving the exact species, the code below allows for
+        #  this kind of uncertainty when doing the species check with Mash
+        if sp_abbr == 'Spy' and mash_species == 'Sdy':
+            mash_species = 'Spy'
+            passed_qc = True
+        elif sp_abbr == 'Cro' and mash_species in ['Cco','Cdu','Cma','Cmu',
+                                                'Csa','Ctu','Cun']:
+            mash_species = 'Cro'
+            passed_qc = True
+        elif sp_abbr == 'Ecl' and mash_species in ['Eas','Eca','Ecl','Ehh',
+                                                'Eho','Eko','Elu','Ero']:
+            mash_species = 'Ecl'
+            passed_qc = True
+        elif sp_abbr == 'Cbo':
+            mash_species = 'Cbo'
+            passed_qc = True
 
-    if not passed_qc:
-        logger.error("The reads did not pass the Mash QC check.")
-        sys.exit(2)
+        if not passed_qc:
+            logger.error("The reads did not pass the Mash QC check.")
+            sys.exit(2)
 
-    if mash_species != sp_abbr:
-        logger.error("The reads did not pass the Mash species check.")
-        sys.exit(2)
+        if mash_species != sp_abbr:
+            logger.error("The reads did not pass the Mash species check.")
+            sys.exit(2)
+    else:
+        if not passed_qc:
+            logger.error("The reference did not pass the Mash QC check.")
+            sys.exit(2)
+
+    write_references_file(references_file, lo_min_dist_refs)
 
 
 def parse_args(argv=None):
@@ -319,6 +330,13 @@ def parse_args(argv=None):
         metavar="DIST_FILE",
         type=Path,
         help="Distance file",
+        required=True,
+    )
+    parser.add_argument(
+        "--references-file",
+        metavar="REFERENCES_FILE",
+        type=Path,
+        help="Output references file",
         required=True,
     )
     parser.add_argument(
@@ -335,13 +353,6 @@ def parse_args(argv=None):
         required=True,
     )
     parser.add_argument(
-        "--species-file",
-        metavar="SPECIES_FILE",
-        type=Path,
-        help="Species file",
-        required=True,
-    )
-    parser.add_argument(
         "--log-level",
         metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
@@ -349,10 +360,11 @@ def parse_args(argv=None):
         default="WARNING",
     )
     parser.add_argument(
-        "--suffix",
-        metavar="SUFFIX",
-        help="Suffix",
-        default="",
+        "--species-file",
+        metavar="SPECIES_FILE",
+        type=Path,
+        help="Species file",
+        default=None,
     )
     return parser.parse_args(argv)
 
@@ -364,11 +376,12 @@ def main(argv=None):
     if not args.dist_file.is_file():
         logger.error(f"The given input file {args.dist_file} was not found!")
         sys.exit(2)
-    if not args.species_file.is_file():
+    if args.species_file is not None and not args.species_file.is_file():
         logger.error(f"The given input file {args.species_file} was not found!")
         sys.exit(2)
+    args.references_file.parent.mkdir(parents=True, exist_ok=True)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_mash_output(args.dist_file, args.species_file, args.sp_abbr, args.suffix, args.report_file)
+    parse_mash_output(args.dist_file, args.sp_abbr, args.references_file, args.report_file, args.species_file)
 
 
 if __name__ == "__main__":

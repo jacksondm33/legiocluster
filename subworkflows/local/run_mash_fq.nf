@@ -1,10 +1,10 @@
 include { MASH_SKETCH as MASH_SKETCH_SPECIES } from '../../modules/local/mash_sketch'
 include { CONCATENATE                        } from '../../modules/local/concatenate'
-include { MASH_SKETCH                        } from '../../modules/local/mash_sketch'
+include { MASH_SKETCH as MASH_SKETCH_FQ      } from '../../modules/local/mash_sketch'
 include { MASH_DIST                          } from '../../modules/local/mash_dist'
 include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_mash_output'
 
-workflow RUN_MASH {
+workflow RUN_MASH_FQ {
     take:
     reads // channel: [ val(meta), [ reads ] ]
 
@@ -13,19 +13,19 @@ workflow RUN_MASH {
     ch_versions = Channel.empty()
 
     MASH_SKETCH_SPECIES (
-        Channel.fromPath(params.species_ref).collect().map { [ [:], it ] }
+        Channel.fromPath(params.species_refs).collect().map { [ [:], it ] }
     )
 
     CONCATENATE (
         reads
     )
 
-    MASH_SKETCH (
+    MASH_SKETCH_FQ (
         CONCATENATE.out.cat
     )
 
     MASH_DIST (
-        MASH_SKETCH.out.mash,
+        MASH_SKETCH_FQ.out.mash,
         MASH_SKETCH_SPECIES.out.mash.map { it[1] }
     )
 
@@ -39,7 +39,7 @@ workflow RUN_MASH {
 
     // Collect versions
     ch_versions = ch_versions.mix(MASH_SKETCH_SPECIES.out.versions)
-    ch_versions = ch_versions.mix(MASH_SKETCH.out.versions)
+    ch_versions = ch_versions.mix(MASH_SKETCH_FQ.out.versions)
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
     ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT.out.versions)
 

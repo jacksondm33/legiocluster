@@ -38,8 +38,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
 include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
 include { RUN_FASTQC } from '../subworkflows/local/run_fastqc'
-include { RUN_MASH } from '../subworkflows/local/run_mash'
+include { RUN_MASH_FQ } from '../subworkflows/local/run_mash_fq'
 include { RUN_SPADES } from '../subworkflows/local/run_spades'
+include { RUN_MASH_FA } from '../subworkflows/local/run_mash_fa'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +82,7 @@ workflow LEGIOCLUSTER {
         RUN_TRIMMOMATIC.out.reads
     )
 
-    RUN_MASH (
+    RUN_MASH_FQ (
         RUN_TRIMMOMATIC.out.reads
     )
 
@@ -90,11 +91,17 @@ workflow LEGIOCLUSTER {
         RUN_TRIMMOMATIC.out.max_read_len
     )
 
+    RUN_MASH_FA (
+        RUN_TRIMMOMATIC.out.reads,
+        RUN_SPADES.out.fasta
+    )
+
     // Collect reports
     ch_reports = ch_reports.concat(RUN_TRIMMOMATIC.out.reports)
     ch_reports = ch_reports.concat(RUN_FASTQC.out.reports)
-    ch_reports = ch_reports.concat(RUN_MASH.out.reports)
+    ch_reports = ch_reports.concat(RUN_MASH_FQ.out.reports)
     ch_reports = ch_reports.concat(RUN_SPADES.out.reports)
+    ch_reports = ch_reports.concat(RUN_MASH_FA.out.reports)
 
     CREATE_REPORT (
         ch_reports.groupTuple().join(INPUT_CHECK.out.reads)
@@ -104,8 +111,9 @@ workflow LEGIOCLUSTER {
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
     ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
     ch_versions = ch_versions.mix(RUN_FASTQC.out.versions)
-    ch_versions = ch_versions.mix(RUN_MASH.out.versions)
+    ch_versions = ch_versions.mix(RUN_MASH_FQ.out.versions)
     ch_versions = ch_versions.mix(RUN_SPADES.out.versions)
+    ch_versions = ch_versions.mix(RUN_MASH_FA.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')

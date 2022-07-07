@@ -22,18 +22,15 @@ process SPADES {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def maxmem = task.memory.toGiga()
-    def k_param = '21,33,55,77'
-    if (max_read_len.toInteger() > 175) {
-        k_param += ',99,127'
-    }
+    def k_param = max_read_len.toInteger() > 175 ? '-k 21,33,55,77,99,127' : '-k 21,33,55,77'
     """
     spades.py \\
         --threads $task.cpus \\
         --memory $maxmem \\
-        -k $k_param \\
         -1 ${reads[0]} \\
         -2 ${reads[1]} \\
         -o ./ \\
+        $k_param \\
         $args
 
     mv spades.log ${prefix}.log

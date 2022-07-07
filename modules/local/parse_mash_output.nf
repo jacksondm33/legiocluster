@@ -12,9 +12,10 @@ process PARSE_MASH_OUTPUT {
     path species
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path("*_references.csv"), emit: references
+    tuple val(meta), path("*_report.txt")    , emit: report
+    tuple val(meta), path("*.log")           , emit: log
+    path "versions.yml"                      , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -22,12 +23,14 @@ process PARSE_MASH_OUTPUT {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def species_file_param = species.name != 'NO_SPECIES' ? "--species-file $species" : ''
     """
     parse_mash_output.py \\
         --dist-file $dist \\
+        --references-file ${prefix}_references.csv \\
         --report-file ${prefix}_report.txt \\
         --sp-abbr $params.sp_abbr \\
-        --species-file $species \\
+        $species_file_param \\
         $args \\
         > ${prefix}.log
 

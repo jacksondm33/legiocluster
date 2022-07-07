@@ -32,6 +32,7 @@ workflow RUN_SPADES {
     ch_versions = ch_versions.mix(PARSE_SPADES_OUTPUT.out.versions)
 
     emit:
+    fasta = FILTER_CONTIGS.out.filtered_contigs
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }
