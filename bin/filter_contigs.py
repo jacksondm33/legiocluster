@@ -55,24 +55,14 @@ def parse_args(argv=None):
         metavar="CONTIGS_IN",
         type=Path,
         help="Input contigs file",
+        required=True,
     )
     parser.add_argument(
         "--contigs-out",
         metavar="CONTIGS_OUT",
         type=Path,
         help="Output contigs file",
-    )
-    parser.add_argument(
-        "--min-contig-cov",
-        metavar="MIN_CONTIG_COV",
-        type=float,
-        help="Minimum contig coverage",
-    )
-    parser.add_argument(
-        "--min-contig-len",
-        metavar="MIN_CONTIG_LEN",
-        type=int,
-        help="Minimum contig length",
+        required=True,
     )
     parser.add_argument(
         "--log-level",
@@ -80,6 +70,20 @@ def parse_args(argv=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default WARNING).",
         default="WARNING",
+    )
+    parser.add_argument(
+        "--min-contig-cov",
+        metavar="MIN_CONTIG_COV",
+        type=float,
+        help="Minimum contig coverage",
+        default=1.0,
+    )
+    parser.add_argument(
+        "--min-contig-len",
+        metavar="MIN_CONTIG_LEN",
+        type=int,
+        help="Minimum contig length",
+        default=1,
     )
     return parser.parse_args(argv)
 

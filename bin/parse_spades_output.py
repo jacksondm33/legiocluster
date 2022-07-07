@@ -314,60 +314,49 @@ def parse_args(argv=None):
         metavar="CONTIG_COV_DIST_FILE",
         type=Path,
         help="Contig cov dist output file",
+        required=True,
     )
     parser.add_argument(
         "--contigs-file",
         metavar="CONTIGS_FILE",
         type=Path,
         help="Input contigs file",
+        required=True,
     )
     parser.add_argument(
         "--contig-ind-cov-file",
         metavar="CONTIG_IND_COV_FILE",
         type=Path,
         help="Contig ind cov output file",
+        required=True,
     )
     parser.add_argument(
         "--contig-ind-len-file",
         metavar="CONTIG_IND_LEN_FILE",
         type=Path,
         help="Contig ind len output file",
+        required=True,
     )
     parser.add_argument(
         "--contig-len-dist-file",
         metavar="CONTIG_LEN_DIST_FILE",
         type=Path,
         help="Contig len dist output file",
+        required=True,
     )
     parser.add_argument(
         "--contig-len-x-cov-dist-file",
         metavar="CONTIG_LEN_X_COV_DIST_FILE",
         type=Path,
         help="Contig len x cov dist output file",
-    )
-    parser.add_argument(
-        "--max-no-contigs",
-        metavar="MAX_NO_CONTIGS",
-        type=int,
-        help="Maximum number of contigs",
-    )
-    parser.add_argument(
-        "--min-contig-cov",
-        metavar="MIN_CONTIG_COV",
-        type=float,
-        help="Minimum contig coverage",
-    )
-    parser.add_argument(
-        "--min-contig-len",
-        metavar="MIN_CONTIG_LEN",
-        type=int,
-        help="Minimum contig length",
+        required=True,
     )
     parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
+        required=True,
     )
     parser.add_argument(
         "--log-level",
@@ -375,6 +364,27 @@ def parse_args(argv=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default WARNING).",
         default="WARNING",
+    )
+    parser.add_argument(
+        "--max-no-contigs",
+        metavar="MAX_NO_CONTIGS",
+        type=int,
+        help="Maximum number of contigs",
+        default=999999999,
+    )
+    parser.add_argument(
+        "--min-contig-cov",
+        metavar="MIN_CONTIG_COV",
+        type=float,
+        help="Minimum contig coverage",
+        default=1.0,
+    )
+    parser.add_argument(
+        "--min-contig-len",
+        metavar="MIN_CONTIG_LEN",
+        type=int,
+        help="Minimum contig length",
+        default=1,
     )
     return parser.parse_args(argv)
 

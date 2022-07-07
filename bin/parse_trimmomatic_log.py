@@ -161,28 +161,25 @@ def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--min-reads",
-        metavar="MIN_READS",
-        type=int,
-        help="Minimum reads",
-    )
-    parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
+        required=True,
     )
     parser.add_argument(
         "--summary-file",
         metavar="SUMMARY_FILE",
         type=Path,
         help="Output summary file",
+        required=True,
     )
     parser.add_argument(
         "--trimmomatic-log-file",
         metavar="TRIMMOMATIC_LOG_FILE",
         type=Path,
         help="Trimmomatic log file",
+        required=True,
     )
     parser.add_argument(
         "--log-level",
@@ -190,6 +187,13 @@ def parse_args(argv=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default WARNING).",
         default="WARNING",
+    )
+    parser.add_argument(
+        "--min-reads",
+        metavar="MIN_READS",
+        type=int,
+        help="Minimum reads",
+        default=0,
     )
     return parser.parse_args(argv)
 

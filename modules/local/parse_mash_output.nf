@@ -26,6 +26,7 @@ process PARSE_MASH_OUTPUT {
     parse_mash_output.py \\
         --dist-file $dist \\
         --report-file ${prefix}_report.txt \\
+        --sp-abbr $params.sp_abbr \\
         --species-file $species \\
         $args \\
         > ${prefix}.log

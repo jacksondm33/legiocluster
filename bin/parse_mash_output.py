@@ -319,28 +319,27 @@ def parse_args(argv=None):
         metavar="DIST_FILE",
         type=Path,
         help="Distance file",
+        required=True,
     )
     parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
+        required=True,
     )
     parser.add_argument(
         "--sp-abbr",
         metavar="SP_ABBR",
         help="Species abbreviation",
+        required=True,
     )
     parser.add_argument(
         "--species-file",
         metavar="SPECIES_FILE",
         type=Path,
         help="Species file",
-    )
-    parser.add_argument(
-        "--suffix",
-        metavar="SUFFIX",
-        help="Suffix",
+        required=True,
     )
     parser.add_argument(
         "--log-level",
@@ -348,6 +347,12 @@ def parse_args(argv=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default WARNING).",
         default="WARNING",
+    )
+    parser.add_argument(
+        "--suffix",
+        metavar="SUFFIX",
+        help="Suffix",
+        default="",
     )
     return parser.parse_args(argv)
 

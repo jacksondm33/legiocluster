@@ -144,6 +144,7 @@ def parse_args(argv=None):
         nargs=2,
         type=Path,
         help="Input reads files",
+        required=True,
     )
     parser.add_argument(
         "--reads-out",
@@ -151,6 +152,7 @@ def parse_args(argv=None):
         nargs=2,
         type=Path,
         help="Output reads files",
+        required=True,
     )
     parser.add_argument(
         "--k",

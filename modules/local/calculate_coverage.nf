@@ -24,6 +24,7 @@ process CALCULATE_COVERAGE {
     """
     calculate_coverage.py \\
         --fastqc-results ${fastqc_results[1]} \\
+        --med-genome-len $params.med_genome_len \\
         --reads-file ${reads[1]} \\
         --report-file ${prefix}_report.txt \\
         $args \\

@@ -59,18 +59,21 @@ def parse_args(argv=None):
         metavar="FASTQC_RESULTS",
         type=Path,
         help="Fastqc results directory",
+        required=True,
     )
     parser.add_argument(
         "--reads-file",
         metavar="READS_FILE",
         type=Path,
         help="Reads file",
+        required=True,
     )
     parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
+        required=True,
     )
     parser.add_argument(
         "--log-level",
