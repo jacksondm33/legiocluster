@@ -28,7 +28,7 @@ workflow RUN_MASH_FA {
 
     PARSE_MASH_OUTPUT (
         MASH_DIST.out.dist,
-        Channel.fromPath('NO_SPECIES')
+        Channel.fromPath('NO_SPECIES').first()
     )
 
     // Collect reports
