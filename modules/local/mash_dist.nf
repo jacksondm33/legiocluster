@@ -12,7 +12,7 @@ process MASH_DIST {
     path reference
 
     output:
-    tuple val(meta), path("*.txt"), emit: dist
+    tuple val(meta), path("*.tab"), emit: dist
     path "versions.yml"           , emit: versions
 
     when:
@@ -21,7 +21,8 @@ process MASH_DIST {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}.txt"
+    def suffix = task.ext.suffix ?: ''
+    def output = "${prefix}_distances_${suffix}.tab"
     """
     mash \\
         dist \\

@@ -34,7 +34,7 @@ process SPADES {
         $args
 
     mv spades.log ${prefix}.log
-    mv contigs.fasta ${prefix}_contigs.fasta
+    mv contigs.fasta ${prefix}_SPAdes_contigs.fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

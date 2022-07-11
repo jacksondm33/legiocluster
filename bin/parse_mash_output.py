@@ -105,7 +105,7 @@ def write_references_file(references_file, lo_min_dist_refs):
     with open(references_file, 'a', newline='') as references:
         references_writer = csv.writer(references)
         for ref in lo_min_dist_refs:
-            references_writer.writerow(ref)
+            references_writer.writerow([ref])
 
 
 def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):

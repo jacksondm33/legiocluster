@@ -35,12 +35,14 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { CHECK_INPUT } from '../subworkflows/local/check_input'
+include { CHECK_INPUT     } from '../subworkflows/local/check_input'
 include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
-include { RUN_FASTQC } from '../subworkflows/local/run_fastqc'
-include { RUN_MASH_FQ } from '../subworkflows/local/run_mash_fq'
-include { RUN_SPADES } from '../subworkflows/local/run_spades'
-include { RUN_MASH_FA } from '../subworkflows/local/run_mash_fa'
+include { RUN_FASTQC      } from '../subworkflows/local/run_fastqc'
+include { RUN_MASH_FQ     } from '../subworkflows/local/run_mash_fq'
+include { RUN_SPADES      } from '../subworkflows/local/run_spades'
+include { RUN_MASH_FA     } from '../subworkflows/local/run_mash_fa'
+include { RUN_BWA_FA      } from '../subworkflows/local/run_bwa_fa'
+include { RUN_BWA         } from '../subworkflows/local/run_bwa'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,9 +53,11 @@ include { RUN_MASH_FA } from '../subworkflows/local/run_mash_fa'
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { MULTIQC                     } from '../modules/nf-core/modules/multiqc/main'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { CREATE_REPORT               } from '../modules/local/create_report'
+include { MULTIQC                            } from '../modules/nf-core/modules/multiqc/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { MASH_SKETCH as MASH_SKETCH_SPECIES } from '../modules/local/mash_sketch'
+include { MASH_SKETCH as MASH_SKETCH_STRAINS } from '../modules/local/mash_sketch'
+include { CREATE_REPORT                      } from '../modules/local/create_report'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,31 +73,111 @@ workflow LEGIOCLUSTER {
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
+    // Check input
     CHECK_INPUT (
         ch_input
     )
 
+    // Run trimmomatic
     RUN_TRIMMOMATIC (
         CHECK_INPUT.out.reads
     )
 
+    // Run fastqc
     RUN_FASTQC (
         CHECK_INPUT.out.reads,
         RUN_TRIMMOMATIC.out.reads
     )
 
-    RUN_MASH_FQ (
-        RUN_TRIMMOMATIC.out.reads
+    // Mash sketch (species)
+    MASH_SKETCH_SPECIES (
+        Channel.fromPath(params.species_refs).collect().map { [ [:], it ] }
     )
 
+    // Run mash fq
+    RUN_MASH_FQ (
+        RUN_TRIMMOMATIC.out.reads,
+        MASH_SKETCH_SPECIES.out.mash.map { it[1] }
+    )
+
+    // Run spades
     RUN_SPADES (
         RUN_TRIMMOMATIC.out.reads,
         RUN_TRIMMOMATIC.out.max_read_len
     )
 
+    // Create strain fasta channel [ meta(ref), fasta ]
+    Channel.fromPath(params.strain_refs)
+        .map {
+            fasta ->
+            [ [ref: fasta.name], fasta ]
+        }
+        .set { ch_strain_fasta }
+
+    // Mash sketch (strains)
+    MASH_SKETCH_STRAINS (
+        ch_strain_fasta
+            .collect { it[1] }
+            .map { [ [:], it ] }
+    )
+
+    // Run mash fa
     RUN_MASH_FA (
         RUN_TRIMMOMATIC.out.reads,
-        RUN_SPADES.out.fasta
+        RUN_SPADES.out.fasta,
+        MASH_SKETCH_STRAINS.out.mash.map { it[1] }
+    )
+
+    // Create bwa reads, fasta channel [ meta(id, ref), reads, fasta ]
+    RUN_TRIMMOMATIC.out.reads
+        .combine(
+            RUN_MASH_FA.out.fastas
+                .map {
+                    meta, fastas ->
+                    [ meta, meta.set_ref != 'NO_FILE' ? [ meta.set_ref ] : fastas ]
+                }
+                .transpose(),
+            by: 0)
+        .map {
+            meta, reads, fasta ->
+            [ meta + [ref: fasta], reads ]
+        }
+        .cross(ch_strain_fasta) { it[0].ref }
+        .map { it[0] + [ it[1][1] ] }
+        .set { ch_bwa_reads_fasta }
+
+    // Run bwa fa
+    RUN_BWA_FA (
+        ch_bwa_reads_fasta
+            .map {
+                meta, reads, fasta ->
+                [ [ref: meta.ref], fasta ]
+            }
+            .unique()
+    )
+
+    // Create bwa reads, fasta, index, fai channels
+    ch_bwa_reads_fasta
+        .cross(
+            RUN_BWA_FA.out.index
+                .join(RUN_BWA_FA.out.fai)
+        ) { it[0].ref }
+        .map { it[0] + [ it[1][1], it[1][2] ] }
+        .multiMap {
+            meta, reads, fasta, index, fai ->
+            reads: [ meta, reads ]
+            fasta: [ meta, fasta ]
+            index: [ meta, index ]
+            fai: [ meta, fai ]
+        }
+        .set { ch_bwa }
+
+    // Run bwa
+    RUN_BWA (
+        ch_bwa.reads,
+        ch_bwa.fasta,
+        ch_bwa.index,
+        ch_bwa.fai
     )
 
     // Collect reports
@@ -102,6 +186,7 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(RUN_MASH_FQ.out.reports)
     ch_reports = ch_reports.concat(RUN_SPADES.out.reports)
     ch_reports = ch_reports.concat(RUN_MASH_FA.out.reports)
+    ch_reports = ch_reports.concat(RUN_BWA.out.reports)
 
     CREATE_REPORT (
         ch_reports.groupTuple().join(CHECK_INPUT.out.reads)
@@ -114,6 +199,8 @@ workflow LEGIOCLUSTER {
     ch_versions = ch_versions.mix(RUN_MASH_FQ.out.versions)
     ch_versions = ch_versions.mix(RUN_SPADES.out.versions)
     ch_versions = ch_versions.mix(RUN_MASH_FA.out.versions)
+    ch_versions = ch_versions.mix(RUN_BWA_FA.out.versions)
+    ch_versions = ch_versions.mix(RUN_BWA.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
