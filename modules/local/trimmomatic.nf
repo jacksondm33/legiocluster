@@ -23,11 +23,13 @@ process TRIMMOMATIC {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def maxmem = task.memory.toGiga()
     def trimmed = meta.single_end ? "SE" : "PE"
     def output = "${prefix}_1_paired.fastq ${prefix}_1_unpaired.fastq ${prefix}_2_paired.fastq ${prefix}_2_unpaired.fastq"
     def qual_trim = task.ext.args2 ?: ''
     """
     trimmomatic \\
+        -Xmx${maxmem}g \\
         $trimmed \\
         -threads $task.cpus \\
         -trimlog ${prefix}.log \\

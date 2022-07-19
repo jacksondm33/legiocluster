@@ -39,6 +39,7 @@ workflow RUN_FASTQC {
     ch_versions = ch_versions.mix(CALCULATE_COVERAGE.out.versions)
 
     emit:
+    zip = FASTQC.out.zip
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }
