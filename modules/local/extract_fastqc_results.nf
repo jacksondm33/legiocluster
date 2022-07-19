@@ -11,9 +11,11 @@ process EXTRACT_FASTQC_RESULTS {
     tuple val(meta), path(reads), path(fastqc_results)
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path("*_per_base_quality_[12].png")    , emit: per_base_quality
+    tuple val(meta), path("*_per_sequence_quality_[12].png"), emit: per_sequence_quality
+    tuple val(meta), path("*_report.txt")                   , emit: report
+    tuple val(meta), path("*.log")                          , emit: log
+    path "versions.yml"                                     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -35,6 +37,11 @@ process EXTRACT_FASTQC_RESULTS {
         --report ${prefix}_report.txt \\
         $args \\
         >> ${prefix}.log
+
+    mv ${fastqc_results[0]}/per_base_quality.png ${prefix}_per_base_quality_1.png
+    mv ${fastqc_results[0]}/per_sequence_quality.png ${prefix}_per_sequence_quality_1.png
+    mv ${fastqc_results[1]}/per_base_quality.png ${prefix}_per_base_quality_2.png
+    mv ${fastqc_results[1]}/per_sequence_quality.png ${prefix}_per_sequence_quality_2.png
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
