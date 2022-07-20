@@ -179,7 +179,13 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(RUN_BWA.out.reports)
 
     CREATE_REPORT (
-        ch_reports.groupTuple().join(CHECK_INPUT.out.reads)
+        ch_reports
+            .map {
+                meta, report ->
+                [ meta - [ref: meta.ref], report ]
+            }
+            .groupTuple()
+            .join(CHECK_INPUT.out.reads)
     )
 
     // Collect versions
