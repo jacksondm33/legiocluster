@@ -96,6 +96,7 @@ workflow BWA {
     emit:
     percent_mapped = ch_percent_mapped
     depth = SAMTOOLS_DEPTH.out.depth
+    bam = PICARD_MARKDUPLICATES.out.bam
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

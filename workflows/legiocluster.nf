@@ -49,6 +49,7 @@ include { MASH_FA     } from '../subworkflows/local/mash_fa'
 include { BWA_FA      } from '../subworkflows/local/bwa_fa'
 include { BWA         } from '../subworkflows/local/bwa'
 include { QUAST       } from '../subworkflows/local/quast'
+include { QUALIMAP    } from '../subworkflows/local/qualimap'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,31 +174,38 @@ workflow LEGIOCLUSTER {
 
     BWA.out.percent_mapped
         .join(BWA.out.depth)
+        .join(BWA.out.bam)
         .cross(ch_strain_fasta) { it[0].ref }
         .map { it[0] + [ it[1][1] ] }
         .map {
-            meta, percent_mapped, depth, fasta ->
-            [ meta - [ref: meta.ref], [percent_mapped, depth, fasta] ]
+            meta, percent_mapped, depth, bam, fasta ->
+            [ meta - [ref: meta.ref], [percent_mapped, depth, bam, fasta] ]
         }
         .groupTuple()
         .map {
-            meta, percent_mapped_depth_fasta ->
-            [ meta ] + percent_mapped_depth_fasta.max { it[0] }
+            meta, percent_mapped_depth_bam_fasta ->
+            [ meta ] + percent_mapped_depth_bam_fasta.max { it[0] }
         }
         .multiMap {
-            meta, percent_mapped, depth, fasta ->
+            meta, percent_mapped, depth, bam, fasta ->
             percent_mapped: [ meta, percent_mapped ]
             depth: [ meta, depth ]
+            bam: [ meta, bam ]
             fasta: [ meta, fasta ]
         }
-        .set { ch_quast }
+        .set { ch_bwa_output }
 
     // Run quast
     QUAST (
         SPADES.out.contigs,
-        ch_quast.fasta,
-        ch_quast.depth,
-        ch_quast.percent_mapped
+        ch_bwa_output.fasta,
+        ch_bwa_output.depth,
+        ch_bwa_output.percent_mapped
+    )
+
+    // Run qualimap
+    QUALIMAP (
+        ch_bwa_output.bam
     )
 
     // Collect reports
@@ -208,6 +216,7 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(MASH_FA.out.reports)
     ch_reports = ch_reports.concat(BWA.out.reports)
     ch_reports = ch_reports.concat(QUAST.out.reports)
+    ch_reports = ch_reports.concat(QUALIMAP.out.reports)
 
     CREATE_REPORT (
         ch_reports
@@ -229,6 +238,7 @@ workflow LEGIOCLUSTER {
     ch_versions = ch_versions.mix(BWA_FA.out.versions)
     ch_versions = ch_versions.mix(BWA.out.versions)
     ch_versions = ch_versions.mix(QUAST.out.versions)
+    ch_versions = ch_versions.mix(QUALIMAP.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')

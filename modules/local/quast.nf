@@ -12,7 +12,7 @@ process QUAST {
 
     output:
     tuple val(meta), path("${prefix}")   , emit: results
-    tuple val(meta), path('*_report.txt'), emit: report
+    tuple val(meta), path("*_quast.txt") , emit: report
     path  "versions.yml"                 , emit: versions
 
     when:
@@ -20,7 +20,7 @@ process QUAST {
 
     script:
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: 'quast'
+    prefix = task.ext.prefix ?: "${meta.id}"
     """
     quast.py \\
         -t $task.cpus \\
@@ -29,7 +29,7 @@ process QUAST {
         $args \\
         $contigs
 
-    ln -s ${prefix}/report.txt ${prefix}_report.txt
+    ln -s ${prefix}/report.txt ${prefix}_quast.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
