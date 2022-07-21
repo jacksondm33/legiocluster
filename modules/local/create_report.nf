@@ -8,17 +8,18 @@ process CREATE_REPORT {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path("report_*.txt"), path(reads)
+    tuple val(meta), path("report_???.txt"), path(reads)
 
     output:
-    tuple val(meta), path("report.txt"), emit: report
+    tuple val(meta), path("*_report.txt"), emit: report
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def output = "report.txt"
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def output = "${prefix}_report.txt"
     """
     cat <<EOF > $output
     REPORT
@@ -36,7 +37,7 @@ process CREATE_REPORT {
     EOF
     cat \\
         $args \\
-        report_*.txt \\
+        report_???.txt \\
         >> $output
     """
 }
