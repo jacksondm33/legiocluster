@@ -36,8 +36,8 @@ workflow TRIMMOMATIC {
         }
         .multiMap {
             meta, both_surviving, max_read_len ->
-            both_surviving: [meta, both_surviving.toInteger()]
-            max_read_len: [meta, max_read_len.toInteger()]
+            both_surviving: [ meta, both_surviving.toInteger() ]
+            max_read_len: [ meta, max_read_len.toInteger() ]
         }
         .set { ch_output }
 

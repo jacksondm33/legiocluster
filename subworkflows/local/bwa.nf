@@ -70,6 +70,13 @@ workflow BWA {
             .join(SAMTOOLS_IDXSTATS.out.idxstats)
     )
 
+    PARSE_BWA_OUTPUT.out.csv
+        .map {
+            meta, csv ->
+            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat() ]
+        }
+        .set { ch_percent_mapped }
+
     // Collect reports
     ch_reports = ch_reports.concat(PARSE_BWA_OUTPUT.out.report)
 
@@ -87,7 +94,7 @@ workflow BWA {
     ch_versions = ch_versions.mix(PARSE_BWA_OUTPUT.out.versions)
 
     emit:
-    csv = PARSE_BWA_OUTPUT.out.csv
+    percent_mapped = ch_percent_mapped
     depth = SAMTOOLS_DEPTH.out.depth
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]

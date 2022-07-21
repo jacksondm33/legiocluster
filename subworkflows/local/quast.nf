@@ -35,6 +35,18 @@ workflow QUAST {
         params.max_no_gaps
     )
 
+    COUNT_NNN_GAPS.out.csv
+        .map {
+            meta, csv ->
+            [ meta ] + csv.splitCsv().collect { it[0] }
+        }
+        .multiMap {
+            meta, depth_mean, depth_sd ->
+            depth_mean: [ meta, depth_mean.toFloat() ]
+            depth_sd: [ meta, depth_sd.toFloat() ]
+        }
+        .set { ch_output }
+
     // Collect reports
     ch_reports = ch_reports.concat(PARSE_QUAST_OUTPUT.out.report)
     ch_reports = ch_reports.concat(COUNT_NNN_GAPS.out.report)
@@ -45,6 +57,8 @@ workflow QUAST {
     ch_versions = ch_versions.mix(COUNT_NNN_GAPS.out.versions)
 
     emit:
+    depth_mean = ch_output.depth_mean
+    depth_sd = ch_output.depth_sd
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

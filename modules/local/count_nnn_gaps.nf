@@ -16,9 +16,12 @@ process COUNT_NNN_GAPS {
     val max_no_gaps
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path("*_histo_depths.png"), emit: histo_depths
+    tuple val(meta), path("*_plot_depths.png") , emit: plot_depths
+    tuple val(meta), path("*_report.txt")      , emit: report
+    tuple val(meta), path("*.csv")             , emit: csv
+    tuple val(meta), path("*.log")             , emit: log
+    path "versions.yml"                        , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

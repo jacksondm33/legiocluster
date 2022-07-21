@@ -171,12 +171,8 @@ workflow LEGIOCLUSTER {
         ch_bwa.fai
     )
 
-    BWA.out.csv
+    BWA.out.percent_mapped
         .join(BWA.out.depth)
-        .map {
-            meta, csv, depth ->
-            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat(), depth ]
-        }
         .cross(ch_strain_fasta) { it[0].ref }
         .map { it[0] + [ it[1][1] ] }
         .map {
