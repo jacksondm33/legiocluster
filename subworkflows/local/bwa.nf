@@ -88,6 +88,7 @@ workflow BWA {
 
     emit:
     csv = PARSE_BWA_OUTPUT.out.csv
+    depth = SAMTOOLS_DEPTH.out.depth
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

@@ -11,9 +11,8 @@ process SAMTOOLS_DEPTH {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("*.tsv"), emit: tsv
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path("*.depth"), emit: depth
+    path  "versions.yml"            , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -24,10 +23,9 @@ process SAMTOOLS_DEPTH {
     """
     samtools \\
         depth \\
-        -o ${prefix}.tsv \\
         $args \\
         $bam \\
-        > ${prefix}.log
+        > ${prefix}.depth
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

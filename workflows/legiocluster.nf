@@ -172,25 +172,27 @@ workflow LEGIOCLUSTER {
     )
 
     BWA.out.csv
+        .join(BWA.out.depth)
         .map {
-            meta, csv ->
-            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat() ]
+            meta, csv, depth ->
+            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat(), depth ]
         }
         .cross(ch_strain_fasta) { it[0].ref }
         .map { it[0] + [ it[1][1] ] }
         .map {
-            meta, percent_mapped, fasta ->
-            [ meta - [ref: meta.ref], [fasta, percent_mapped] ]
+            meta, percent_mapped, depth, fasta ->
+            [ meta - [ref: meta.ref], [percent_mapped, depth, fasta] ]
         }
         .groupTuple()
         .map {
-            meta, fasta_percent_mapped ->
-            [ meta ] + fasta_percent_mapped.max { it[1] }
+            meta, percent_mapped_depth_fasta ->
+            [ meta ] + percent_mapped_depth_fasta.max { it[0] }
         }
         .multiMap {
-            meta, fasta, percent_mapped ->
-            fasta: [ meta, fasta ]
+            meta, percent_mapped, depth, fasta ->
             percent_mapped: [ meta, percent_mapped ]
+            depth: [ meta, depth ]
+            fasta: [ meta, fasta ]
         }
         .set { ch_quast }
 
@@ -198,6 +200,7 @@ workflow LEGIOCLUSTER {
     QUAST (
         SPADES.out.contigs,
         ch_quast.fasta,
+        ch_quast.depth,
         ch_quast.percent_mapped
     )
 

@@ -129,8 +129,8 @@ def parse_args(argv=None):
         "--log-level",
         metavar="LOG_LEVEL",
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level (default WARNING).",
-        default="WARNING",
+        help="The desired log level",
+        default="INFO",
     )
     parser.add_argument(
         "--xg",

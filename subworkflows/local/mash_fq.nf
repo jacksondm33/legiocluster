@@ -27,7 +27,7 @@ workflow MASH_FQ {
 
     PARSE_MASH_OUTPUT (
         MASH_DIST_FQ.out.dist,
-        Channel.of(params.species.collect { sp_abbr, info -> sp_abbr + ',' + info[0] }).flatten().collectFile(name: "species.csv", newLine: true, sort: true)
+        Channel.of(params.species.collect { sp_abbr, info -> sp_abbr + ',' + info[0] }).flatten().collectFile(name: "species.csv", newLine: true, sort: true).first()
     )
 
     // Collect reports
