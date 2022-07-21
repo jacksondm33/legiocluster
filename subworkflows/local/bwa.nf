@@ -10,7 +10,7 @@ include { SAMTOOLS_IDXSTATS                       } from '../../modules/local/sa
 include { SAMTOOLS_DEPTH                          } from '../../modules/local/samtools_depth'
 include { PARSE_BWA_OUTPUT                        } from '../../modules/local/parse_bwa_output'
 
-workflow RUN_BWA {
+workflow BWA {
     take:
     reads // channel: [ meta, [ reads ] ]
     fasta // channel: [ meta, fasta ]
@@ -87,6 +87,7 @@ workflow RUN_BWA {
     ch_versions = ch_versions.mix(PARSE_BWA_OUTPUT.out.versions)
 
     emit:
+    csv = PARSE_BWA_OUTPUT.out.csv
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

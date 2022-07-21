@@ -40,14 +40,15 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/local/custom_dum
 include { MULTIQC                            } from '../modules/local/multiqc'
 
 // Subworkflows
-include { CHECK_INPUT     } from '../subworkflows/local/check_input'
-include { RUN_TRIMMOMATIC } from '../subworkflows/local/run_trimmomatic'
-include { RUN_FASTQC      } from '../subworkflows/local/run_fastqc'
-include { RUN_MASH_FQ     } from '../subworkflows/local/run_mash_fq'
-include { RUN_SPADES      } from '../subworkflows/local/run_spades'
-include { RUN_MASH_FA     } from '../subworkflows/local/run_mash_fa'
-include { RUN_BWA_FA      } from '../subworkflows/local/run_bwa_fa'
-include { RUN_BWA         } from '../subworkflows/local/run_bwa'
+include { CHECK_INPUT } from '../subworkflows/local/check_input'
+include { TRIMMOMATIC } from '../subworkflows/local/trimmomatic'
+include { FASTQC      } from '../subworkflows/local/fastqc'
+include { MASH_FQ     } from '../subworkflows/local/mash_fq'
+include { SPADES      } from '../subworkflows/local/spades'
+include { MASH_FA     } from '../subworkflows/local/mash_fa'
+include { BWA_FA      } from '../subworkflows/local/bwa_fa'
+include { BWA         } from '../subworkflows/local/bwa'
+include { QUAST       } from '../subworkflows/local/quast'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,14 +70,14 @@ workflow LEGIOCLUSTER {
     )
 
     // Run trimmomatic
-    RUN_TRIMMOMATIC (
+    TRIMMOMATIC (
         CHECK_INPUT.out.reads
     )
 
     // Run fastqc
-    RUN_FASTQC (
+    FASTQC (
         CHECK_INPUT.out.reads,
-        RUN_TRIMMOMATIC.out.reads
+        TRIMMOMATIC.out.reads
     )
 
     // Mash sketch (species)
@@ -85,15 +86,15 @@ workflow LEGIOCLUSTER {
     )
 
     // Run mash fq
-    RUN_MASH_FQ (
-        RUN_TRIMMOMATIC.out.reads,
+    MASH_FQ (
+        TRIMMOMATIC.out.reads,
         MASH_SKETCH_SPECIES.out.mash.map { it[1] }
     )
 
     // Run spades
-    RUN_SPADES (
-        RUN_TRIMMOMATIC.out.reads,
-        RUN_TRIMMOMATIC.out.max_read_len
+    SPADES (
+        TRIMMOMATIC.out.reads,
+        TRIMMOMATIC.out.max_read_len
     )
 
     // Create strain fasta channel [ meta(ref), fasta ]
@@ -112,16 +113,16 @@ workflow LEGIOCLUSTER {
     )
 
     // Run mash fa
-    RUN_MASH_FA (
-        RUN_TRIMMOMATIC.out.reads,
-        RUN_SPADES.out.fasta,
+    MASH_FA (
+        TRIMMOMATIC.out.reads,
+        SPADES.out.contigs,
         MASH_SKETCH_STRAINS.out.mash.map { it[1] }
     )
 
     // Create bwa reads, fasta channel [ meta(id, ref), reads, fasta ]
-    RUN_TRIMMOMATIC.out.reads
+    TRIMMOMATIC.out.reads
         .combine(
-            RUN_MASH_FA.out.fastas
+            MASH_FA.out.fastas
                 .map {
                     meta, fastas ->
                     [ meta, meta.set_ref != 'NO_FILE' ? [ meta.set_ref ] : fastas ]
@@ -137,7 +138,7 @@ workflow LEGIOCLUSTER {
         .set { ch_bwa_reads_fasta }
 
     // Run bwa fa
-    RUN_BWA_FA (
+    BWA_FA (
         ch_bwa_reads_fasta
             .map {
                 meta, reads, fasta ->
@@ -149,8 +150,8 @@ workflow LEGIOCLUSTER {
     // Create bwa reads, fasta, index, fai channels
     ch_bwa_reads_fasta
         .cross(
-            RUN_BWA_FA.out.index
-                .join(RUN_BWA_FA.out.fai)
+            BWA_FA.out.index
+                .join(BWA_FA.out.fai)
         ) { it[0].ref }
         .map { it[0] + [ it[1][1], it[1][2] ] }
         .multiMap {
@@ -163,20 +164,51 @@ workflow LEGIOCLUSTER {
         .set { ch_bwa }
 
     // Run bwa
-    RUN_BWA (
+    BWA (
         ch_bwa.reads,
         ch_bwa.fasta,
         ch_bwa.index,
         ch_bwa.fai
     )
 
+    BWA.out.csv
+        .map {
+            meta, csv ->
+            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat() ]
+        }
+        .cross(ch_strain_fasta) { it[0].ref }
+        .map { it[0] + [ it[1][1] ] }
+        .map {
+            meta, percent_mapped, fasta ->
+            [ meta - [ref: meta.ref], [fasta, percent_mapped] ]
+        }
+        .groupTuple()
+        .map {
+            meta, fasta_percent_mapped ->
+            [ meta ] + fasta_percent_mapped.max { it[1] }
+        }
+        .multiMap {
+            meta, fasta, percent_mapped ->
+            fasta: [ meta, fasta ]
+            percent_mapped: [ meta, percent_mapped ]
+        }
+        .set { ch_quast }
+
+    // Run quast
+    QUAST (
+        SPADES.out.contigs,
+        ch_quast.fasta,
+        ch_quast.percent_mapped
+    )
+
     // Collect reports
-    ch_reports = ch_reports.concat(RUN_TRIMMOMATIC.out.reports)
-    ch_reports = ch_reports.concat(RUN_FASTQC.out.reports)
-    ch_reports = ch_reports.concat(RUN_MASH_FQ.out.reports)
-    ch_reports = ch_reports.concat(RUN_SPADES.out.reports)
-    ch_reports = ch_reports.concat(RUN_MASH_FA.out.reports)
-    ch_reports = ch_reports.concat(RUN_BWA.out.reports)
+    ch_reports = ch_reports.concat(TRIMMOMATIC.out.reports)
+    ch_reports = ch_reports.concat(FASTQC.out.reports)
+    ch_reports = ch_reports.concat(MASH_FQ.out.reports)
+    ch_reports = ch_reports.concat(SPADES.out.reports)
+    ch_reports = ch_reports.concat(MASH_FA.out.reports)
+    ch_reports = ch_reports.concat(BWA.out.reports)
+    ch_reports = ch_reports.concat(QUAST.out.reports)
 
     CREATE_REPORT (
         ch_reports
@@ -190,13 +222,14 @@ workflow LEGIOCLUSTER {
 
     // Collect versions
     ch_versions = ch_versions.mix(CHECK_INPUT.out.versions)
-    ch_versions = ch_versions.mix(RUN_TRIMMOMATIC.out.versions)
-    ch_versions = ch_versions.mix(RUN_FASTQC.out.versions)
-    ch_versions = ch_versions.mix(RUN_MASH_FQ.out.versions)
-    ch_versions = ch_versions.mix(RUN_SPADES.out.versions)
-    ch_versions = ch_versions.mix(RUN_MASH_FA.out.versions)
-    ch_versions = ch_versions.mix(RUN_BWA_FA.out.versions)
-    ch_versions = ch_versions.mix(RUN_BWA.out.versions)
+    ch_versions = ch_versions.mix(TRIMMOMATIC.out.versions)
+    ch_versions = ch_versions.mix(FASTQC.out.versions)
+    ch_versions = ch_versions.mix(MASH_FQ.out.versions)
+    ch_versions = ch_versions.mix(SPADES.out.versions)
+    ch_versions = ch_versions.mix(MASH_FA.out.versions)
+    ch_versions = ch_versions.mix(BWA_FA.out.versions)
+    ch_versions = ch_versions.mix(BWA.out.versions)
+    ch_versions = ch_versions.mix(QUAST.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
@@ -210,7 +243,7 @@ workflow LEGIOCLUSTER {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(RUN_FASTQC.out.zip.collect{ it[1] }.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{ it[1] }.ifEmpty([]))
 
     MULTIQC (
         ch_multiqc_files.collect()

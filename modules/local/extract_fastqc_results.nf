@@ -38,10 +38,10 @@ process EXTRACT_FASTQC_RESULTS {
         $args \\
         >> ${prefix}.log
 
-    ln -s ${fastqc_results[0]}/per_base_quality.png ${prefix}_per_base_quality_1.png
-    ln -s ${fastqc_results[0]}/per_sequence_quality.png ${prefix}_per_sequence_quality_1.png
-    ln -s ${fastqc_results[1]}/per_base_quality.png ${prefix}_per_base_quality_2.png
-    ln -s ${fastqc_results[1]}/per_sequence_quality.png ${prefix}_per_sequence_quality_2.png
+    cp ${fastqc_results[0]}/per_base_quality.png ${prefix}_per_base_quality_1.png
+    cp ${fastqc_results[0]}/per_sequence_quality.png ${prefix}_per_sequence_quality_1.png
+    cp ${fastqc_results[1]}/per_base_quality.png ${prefix}_per_base_quality_2.png
+    cp ${fastqc_results[1]}/per_sequence_quality.png ${prefix}_per_sequence_quality_2.png
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

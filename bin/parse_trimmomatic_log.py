@@ -5,6 +5,7 @@
 
 
 import argparse
+import csv
 import logging
 import sys
 from pathlib import Path
@@ -14,7 +15,7 @@ from statistics import fmean, pstdev
 logger = logging.getLogger()
 
 
-def parse_trimmomatic_log(trimmomatic_log_file, report_file, min_reads):
+def parse_trimmomatic_log(trimmomatic_log_file, output_file, report_file, min_reads):
     """
     Extracts data from the trimmomatic log file and writes them to the report.
     param: str trimmomatic_log_file = trimmomatic log file
@@ -154,24 +155,27 @@ def parse_trimmomatic_log(trimmomatic_log_file, report_file, min_reads):
         logger.error("Not enough reads surviving after Trimmomatic.")
         sys.exit(2)
 
-    return both_surviving, max_read_len
+    with open(output_file, 'a', newline='') as output:
+        output_writer = csv.writer(output)
+        output_writer.writerow([both_surviving])
+        output_writer.writerow([max_read_len])
 
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--output-file",
+        metavar="OUTPUT_FILE",
+        type=Path,
+        help="Output file",
+        required=True,
+    )
+    parser.add_argument(
         "--report-file",
         metavar="REPORT_FILE",
         type=Path,
         help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--summary-file",
-        metavar="SUMMARY_FILE",
-        type=Path,
-        help="Output summary file",
         required=True,
     )
     parser.add_argument(
@@ -205,11 +209,9 @@ def main(argv=None):
     if not args.trimmomatic_log_file.is_file():
         logger.error(f"The given input file {args.trimmomatic_log_file} was not found!")
         sys.exit(2)
+    args.output_file.parent.mkdir(parents=True, exist_ok=True)
     args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    args.summary_file.parent.mkdir(parents=True, exist_ok=True)
-    both_surviving, max_read_len = parse_trimmomatic_log(args.trimmomatic_log_file, args.report_file, args.min_reads)
-    with open(args.summary_file, 'a') as summary:
-        print(both_surviving, max_read_len, file=summary)
+    parse_trimmomatic_log(args.trimmomatic_log_file, args.output_file, args.report_file, args.min_reads)
 
 
 if __name__ == "__main__":

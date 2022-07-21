@@ -1,6 +1,6 @@
-process PARSE_TRIMMOMATIC_LOG {
+process CHECK_PERCENT_MAPPED {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_low'
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -8,13 +8,11 @@ process PARSE_TRIMMOMATIC_LOG {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path("trimlog.txt")
+    tuple val(meta), val(percent_mapped)
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.csv")       , emit: csv
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path("*.log"), emit: log
+    path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -22,11 +20,11 @@ process PARSE_TRIMMOMATIC_LOG {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def min_percent_mapped = (meta.set_ref != 'NO_FILE' || meta.make_ref == 'true') ? 0 : params.min_percent_mapped
     """
-    parse_trimmomatic_log.py \\
-        --output-file ${prefix}.csv \\
-        --report-file ${prefix}_report.txt \\
-        --trimmomatic-log-file trimlog.txt \\
+    check_percent_mapped.py \\
+        --percent-mapped $percent_mapped \\
+        --min-percent-mapped $min_percent_mapped \\
         $args \\
         > ${prefix}.log
 

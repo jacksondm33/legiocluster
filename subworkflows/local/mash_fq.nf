@@ -3,7 +3,7 @@ include { MASH_SKETCH as MASH_SKETCH_FQ      } from '../../modules/local/mash_sk
 include { MASH_DIST as MASH_DIST_FQ          } from '../../modules/local/mash_dist'
 include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_mash_output'
 
-workflow RUN_MASH_FQ {
+workflow MASH_FQ {
     take:
     reads // channel: [ meta, [ reads ] ]
     mash  // channel: [ mash ]

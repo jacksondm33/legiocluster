@@ -1,7 +1,7 @@
 include { BWA_INDEX      } from '../../modules/local/bwa_index'
 include { SAMTOOLS_FAIDX } from '../../modules/local/samtools_faidx'
 
-workflow RUN_BWA_FA {
+workflow BWA_FA {
     take:
     fasta // channel: [ meta(ref), fasta ]
 

@@ -11,7 +11,7 @@ process PARSE_BWA_OUTPUT {
     tuple val(meta), path(fasta), path(sam), path(flagstat), path(idxstats)
 
     output:
-    tuple val(meta), path("*_output.csv")        , emit: percent_mapped
+    tuple val(meta), path("*.csv")               , emit: csv
     tuple val(meta), path("*_report.txt")        , emit: report
     tuple val(meta), path("*.log")               , emit: log
     path "versions.yml"                          , emit: versions
@@ -30,7 +30,7 @@ process PARSE_BWA_OUTPUT {
     parse_bwa_output.py \\
         --flagstat-file $flagstat \\
         --idxstats-file $idxstats \\
-        --output-file ${prefix}_output.csv \\
+        --output-file ${prefix}.csv \\
         --reference-file $fasta \\
         --report-file ${prefix}_report.txt \\
         --sam-file $sam \\

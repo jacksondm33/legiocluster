@@ -1,5 +1,5 @@
 process UNZIP {
-    tag "$archive"
+    tag "$meta.id"
     label 'process_low'
 
     conda (params.enable_conda ? "bioconda::p7zip=15.09" : null)

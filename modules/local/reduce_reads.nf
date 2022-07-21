@@ -22,7 +22,7 @@ process REDUCE_READS {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def output = "${prefix}_1_reduced.fastq ${prefix}_2_reduced.fastq"
-    if (both_surviving.toInteger() > params.read_cutoff) {
+    if (both_surviving > params.read_cutoff) {
         """
         reduce_reads.py \\
             --reads-in $reads \\

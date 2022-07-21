@@ -1,4 +1,4 @@
-process PARSE_TRIMMOMATIC_LOG {
+process PARSE_QUAST_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,11 +8,10 @@ process PARSE_TRIMMOMATIC_LOG {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path("trimlog.txt")
+    tuple val(meta), path(contigs), path(quast)
 
     output:
     tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.csv")       , emit: csv
     tuple val(meta), path("*.log")       , emit: log
     path "versions.yml"                  , emit: versions
 
@@ -23,10 +22,10 @@ process PARSE_TRIMMOMATIC_LOG {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    parse_trimmomatic_log.py \\
-        --output-file ${prefix}.csv \\
+    parse_quast_output.py \\
+        --contigs-file $contigs \\
+        --quast-report-file $quast \\
         --report-file ${prefix}_report.txt \\
-        --trimmomatic-log-file trimlog.txt \\
         $args \\
         > ${prefix}.log
 

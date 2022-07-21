@@ -3,7 +3,7 @@ include { MASH_SKETCH                        } from '../../modules/local/mash_sk
 include { MASH_DIST as MASH_DIST_FA          } from '../../modules/local/mash_dist'
 include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_mash_output'
 
-workflow RUN_MASH_FA {
+workflow MASH_FA {
     take:
     reads // channel: [ meta(id), [ reads ] ]
     fasta // channel: [ meta(id), fasta ]
@@ -36,7 +36,7 @@ workflow RUN_MASH_FA {
     ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT.out.versions)
 
     emit:
-    fastas = PARSE_MASH_OUTPUT.out.fastas.map { meta, fastas -> [ meta, fastas.splitCsv().collect { it[0] } ] }
+    fastas = PARSE_MASH_OUTPUT.out.fastas.map { meta, fastas -> [ meta, fastas.splitCsv().first() ] }
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

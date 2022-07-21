@@ -22,7 +22,7 @@ process SPADES {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def maxmem = task.memory.toGiga()
-    def k_param = max_read_len.toInteger() > 175 ? '-k 21,33,55,77,99,127' : '-k 21,33,55,77'
+    def k_param = max_read_len > 175 ? '-k 21,33,55,77,99,127' : '-k 21,33,55,77'
     """
     spades.py \\
         --threads $task.cpus \\
