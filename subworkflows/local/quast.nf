@@ -40,12 +40,12 @@ workflow QUAST {
     COUNT_NNN_GAPS.out.csv
         .map {
             meta, csv ->
-            [ meta ] + csv.splitCsv().collect { it[0] }
+            [ meta ] + csv.splitCsv().collect()
         }
         .multiMap {
             meta, depth_mean, depth_sd ->
-            depth_mean: [ meta, depth_mean.toFloat() ]
-            depth_sd: [ meta, depth_sd.toFloat() ]
+            depth_mean: [ meta, depth_mean[0].toFloat() ]
+            depth_sd: [ meta, depth_sd[0].toFloat() ]
         }
         .set { ch_output }
 

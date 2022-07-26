@@ -33,12 +33,12 @@ workflow TRIMMOMATIC {
     PARSE_TRIMMOMATIC_LOG.out.csv
         .map {
             meta, csv ->
-            [ meta ] + csv.splitCsv().collect { it[0] }
+            [ meta ] + csv.splitCsv().collect()
         }
         .multiMap {
             meta, both_surviving, max_read_len ->
-            both_surviving: [ meta, both_surviving.toInteger() ]
-            max_read_len: [ meta, max_read_len.toInteger() ]
+            both_surviving: [ meta, both_surviving[0].toInteger() ]
+            max_read_len: [ meta, max_read_len[0].toInteger() ]
         }
         .set { ch_output }
 

@@ -40,7 +40,7 @@ workflow MASH_FA {
     ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT.out.versions)
 
     emit:
-    fastas = PARSE_MASH_OUTPUT.out.fastas.map { meta, fastas -> [ meta, fastas.splitCsv().first() ] }
+    fastas = PARSE_MASH_OUTPUT.out.fastas.map { meta, csv -> [ meta ] + csv.splitCsv().collect() }
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

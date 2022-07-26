@@ -51,6 +51,7 @@ include { BWA         } from '../subworkflows/local/bwa'
 include { QUAST       } from '../subworkflows/local/quast'
 include { QUALIMAP    } from '../subworkflows/local/qualimap'
 include { FREEBAYES   } from '../subworkflows/local/freebayes'
+include { MST_FA      } from '../subworkflows/local/mst_fa'
 include { MST         } from '../subworkflows/local/mst'
 
 /*
@@ -195,21 +196,31 @@ workflow LEGIOCLUSTER {
         .join(ch_bwa_input.mapped_threshold)
         .map {
             meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ->
-            [ meta - [ref: meta.ref], [ percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ] ]
+            [ meta - [ref: meta.ref], percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ]
+        }
+        .join(SPADES.out.contigs)
+        .map {
+            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ->
+            [ meta, [ percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ] ]
         }
         .groupTuple()
         .map {
             meta, output ->
             [ meta ] + output.max { it[0] }
         }
+        .map {
+            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ->
+            [ meta + [ref: fasta.name], percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ]
+        }
         .multiMap {
-            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ->
+            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ->
             percent_mapped: [ meta, percent_mapped ]
             depth: [ meta, depth ]
             bam: [ meta, bam ]
             mpileup: [ meta, mpileup ]
             fasta: [ meta, fasta ]
             fai: [ meta, fai ]
+            contigs: [ meta, contigs ]
             max_no_ns:          [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 999999999 : params.max_no_ns          ]
             max_no_gaps:        [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 999999999 : params.max_no_gaps        ]
             snp_threshold:      [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 0         : params.snp_threshold      ]
@@ -220,7 +231,7 @@ workflow LEGIOCLUSTER {
 
     // Run quast
     QUAST (
-        SPADES.out.contigs,
+        ch_bwa_output.contigs,
         ch_bwa_output.fasta,
         ch_bwa_output.depth,
         ch_bwa_output.percent_mapped,
@@ -266,13 +277,39 @@ workflow LEGIOCLUSTER {
             mpileup: [ meta, mpileup ]
             vcf: [ meta, vcf ]
         }
+        .set { ch_mst_fa }
+
+    MST_FA (
+        ch_mst_fa.fasta
+            .map {
+                meta, fasta ->
+                [ [ref: meta.ref], fasta ]
+            }
+            .unique()
+    )
+
+    ch_mst_fa.mpileup
+        .join(ch_mst_fa.vcf)
+        .cross(
+            MST_FA.out.snp_cons
+                .join(MST_FA.out.bases)
+        ) { it[0].ref }
+        .map { it[0] + [ it[1][1], it[1][2] ] }
+        .multiMap {
+            meta, mpileup, vcf, snp_cons, bases ->
+            mpileup:  [ meta, mpileup ]
+            vcf:      [ meta, vcf ]
+            snp_cons: [ meta, snp_cons ]
+            bases:    [ meta, bases ]
+        }
         .set { ch_mst }
 
     // Close reference
     MST (
-        ch_mst.fasta,
         ch_mst.mpileup,
-        ch_mst.vcf
+        ch_mst.vcf,
+        ch_mst.snp_cons,
+        ch_mst.bases
     )
 
     // Distant reference

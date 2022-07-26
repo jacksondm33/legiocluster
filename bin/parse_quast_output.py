@@ -43,8 +43,6 @@ def parse_quast_output(contigs_file, quast_report_file, report_file, CONTIG_THRE
             print(contigs, 'contigs', file=report)
             print('THE SAMPLE MIGHT BE CONTAMINATED\n\n', file=report)
 
-    return contigs
-
 
 def parse_args(argv=None):
     """Define and immediately parse command line arguments."""

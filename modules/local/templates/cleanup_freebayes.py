@@ -16,68 +16,6 @@ from pathlib import Path
 logger = logging.getLogger()
 
 
-def read_ref_file(reference_file):
-    """
-    Reads a fasta file with the sequence of the reference genome (consisting
-      of one or more contigs) and returns a list of headers and sequences.
-    return: list lo_contigs = list of headers and sequences, e.g.:
-        [[NODE_1_length_6526_cov_26.4, 'ACTTGTACTAATTGGCTGATTGTTGACATAA...'],
-         [NODE_2_length_5226_cov_30.2, 'GTACTAATTGGCTGATTGTCTTCCAACATAA...'],
-         ...]
-    """
-
-    lo_contigs = []
-    contig = ''
-    seq = ''
-
-    with open(reference_file, 'r') as infile:
-        for line in infile:
-            line = line.rstrip('''\n''')
-            # extracts the contig name and adds a new list to lo_contigs that
-            # includes the new contig name and '' (default) for the sequence
-            if line.startswith('>'):
-                contig = line.split()[0][1:]
-                lo_contigs.append([contig, seq])
-            # takes a line representing a sequence and adds it to the last
-            # sequence in the list of lists
-            else:
-                lo_contigs[-1][1] += line
-
-    return lo_contigs
-
-
-def convert_to_base_list(lo_contigs):
-    """
-    Takes a list of [[header_1, sequence_1], ...] and converts it to a list
-      of [[contig, position, base], ...]
-    param: list lo_contigs = [[header_1, sequence_1], ...]
-    return: list lo_bases = list of [contig-name, position, base] for all
-            contig sequences
-    """
-
-    lo_bases = []
-    for contig in lo_contigs:
-        for i, base in enumerate(contig[1]):
-            lo_bases.append([contig[0], str(i+1), base])
-
-    return lo_bases
-
-
-def write_ref_seq(snp_cons_file, reference_file, lo_bases):
-    """
-    Takes a list of [[contig-name, position, base], ...] and writes the base
-      to file such that each base occupies it's own line.
-    param: list lo_bases = list of [contig-name, position, base] for the entire
-           reference sequence
-    output: a '_SNP_cons.txt' file for the reference strain
-    """
-
-    with open(snp_cons_file, 'w') as outfile:
-        print('# sequence for reference ' + str(reference_file), file=outfile)
-        for base in lo_bases:
-            print(base[2], file=outfile)
-
-
 def read_mpileup(mpileup_file):
     """
     Returns the content of a mpileup.vcf file as a list.
@@ -142,7 +80,7 @@ def translate_cigar(CIGAR):
     return tl_cigar
 
 
-def get_I_str(i, s, query_seq, tl_CIGAR, DEL_count):
+def get_i_str(i, s, query_seq, tl_CIGAR, DEL_count):
     """
     FreeBayes output for complex mutations can be a mix of various mutations
       This function takes a translated CIGAR string, position, and mutation,
@@ -178,7 +116,7 @@ def clean_up_fb_data(lo_file_content):
             deletion = '-'
             an insertion of one or more bases will be preceeded by the last
             matching base, in the form: MI+
-    helper function to read_freebayes_SNPs()
+    helper function to read_freebayes_snps()
     """
 
     lo_added_rows = []    # new, deconvoluted mutations, to be added
@@ -238,7 +176,7 @@ def clean_up_fb_data(lo_file_content):
                         if tl_CIGAR[i-1] != 'I':
                             # helper function to extract the query string to
                             # insert
-                            I_str = get_I_str(i, s, query_base, tl_CIGAR,
+                            I_str = get_i_str(i, s, query_base, tl_CIGAR,
                                               DEL_count)
                             # 'i-1' because this will be an entry at the last
                             # match posn, not at the posn of the 'I'
@@ -286,7 +224,7 @@ def clean_up_fb_data(lo_file_content):
     return do_freebayes_data
 
 
-def read_freebayes_SNPs(vcf_file):
+def read_freebayes_snps(vcf_file):
     """
     Returns the content of freebayes.vcf as a dictionary.
       A line in a vcf looks like this (one line per mutation):
@@ -325,8 +263,8 @@ def read_freebayes_SNPs(vcf_file):
     return do_freebayes_data
 
 
-def combine_CSVs(output_file, lo_bases, do_mpileup_data, do_freebayes_data,
-                 reference_file, isolate):
+def combine_csv(csv_file, lo_bases, do_mpileup_data, do_freebayes_data,
+                isolate, reference):
     """
     Combines the data from 'mpileup.vcf' and 'freebayes.vcf' with the data
       from the reference sequence. The latter is a list that is used to make
@@ -340,11 +278,11 @@ def combine_CSVs(output_file, lo_bases, do_mpileup_data, do_freebayes_data,
     output: a CSV file combining all input data
     """
 
-    with open(output_file, 'w') as output:
+    with open(csv_file, 'w') as output:
         # generates a tab-separated csv file
         row_writer = csv.writer(output, dialect='excel-tab')
         # write the header rows
-        row_writer.writerow(['# ' + reference_file + ' versus ' + isolate])
+        row_writer.writerow(['# ' + reference + ' versus ' + isolate])
         row_writer.writerow(['# contig', 'posn', 'ref_base', 'mp-ref',
                              'mp-query', 'fb-posn', 'fb-ref', 'fb-query',
                              'fb-CIGAR'])
@@ -369,9 +307,9 @@ def combine_CSVs(output_file, lo_bases, do_mpileup_data, do_freebayes_data,
             row_writer.writerow(combined_rows)
 
 
-def make_consensus(snp_cons_file, reference_file, output_file, isolate, diagnostic_mode):
+def make_consensus(snp_cons_file, csv_file, isolate, reference, diagnostic_mode):
     """
-    Takes a "combined_files.csv" file made by combine_CSVs() and determines a
+    Takes a "combined_files.csv" file made by combine_csv() and determines a
     consensus sequence for the query from the mpileup and the FreeBayes data:
     - if both or only FreeBayes calls it a mutation, it's a mutation
     - if only mpileup calls it a mutation, it's ambiguous ('n') (the mutation
@@ -387,12 +325,12 @@ def make_consensus(snp_cons_file, reference_file, output_file, isolate, diagnost
 
     with open(snp_cons_file, 'w') as outfile:
         # write a header
-        print('# SNPs and INDELs after comparing strain', reference_file[:-3],
+        print('# SNPs and INDELs after comparing strain', reference,
               'with', isolate,
               '(Based on bcftools mpileup and FreeBayes data.)',
               file=outfile)
 
-        with open(output_file, 'r') as infile:
+        with open(csv_file, 'r') as infile:
             for line in infile:
                 line = line.rstrip('''\n''')
                 data = line.split()
@@ -461,34 +399,30 @@ def make_consensus(snp_cons_file, reference_file, output_file, isolate, diagnost
                             print('N', file=outfile)
 
 
-def cleanup_freebayes(reference_file, snp_cons_file, mpileup_file, vcf_file, output_file, isolate, diagnostic_mode):
+def cleanup_freebayes(mpileup_file, vcf_file, bases_file, csv_file, snp_cons_file, isolate, reference, diagnostic_mode):
     """
     main function
     param: str isolate = isolate name, e.g.: 'IDR001234'
     output: a '_SNP_cons.txt' file added to the /VCF_folder
     """
 
-    # returns a list of contigs [header, sequence] for the reference
-    lo_contigs = read_ref_file(reference_file)
-
-    # returns list of [contig, posn, base] for the reference
-    lo_bases = convert_to_base_list(lo_contigs)
-
-    # generates a <ref>_SNP_cons.txt file, if needed
-    if not os.path.exists(snp_cons_file):
-        write_ref_seq(snp_cons_file, reference_file, lo_bases)
+    lo_bases = []
+    with open(bases_file, 'r', newline='') as bases:
+        bases_reader = csv.reader(bases)
+        for entry in bases_reader:
+            lo_bases.append(entry)
 
     # returns dict of mpileup data
     do_mpileup_data = read_mpileup(mpileup_file)
 
     # returns dict of freebayes data
-    do_freebayes_data = read_freebayes_SNPs(vcf_file)
+    do_freebayes_data = read_freebayes_snps(vcf_file)
 
     # makes csv file from ref seq, mpileup, and freebayes data
-    combine_CSVs(output_file, lo_bases, do_mpileup_data, do_freebayes_data, reference_file, isolate)
+    combine_csv(csv_file, lo_bases, do_mpileup_data, do_freebayes_data, isolate, reference)
 
     # converts csv file into consensus <isolate>_SNP_cons.txt file
-    make_consensus(snp_cons_file, reference_file, output_file, isolate, diagnostic_mode)
+    make_consensus(snp_cons_file, csv_file, isolate, reference, diagnostic_mode)
 
 
 if __name__ == "__main__":
@@ -502,5 +436,5 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(cleanup_freebayes("$fasta", "$snp_cons", "$mpileup", "$vcf", "$output", "$meta.id", bool("$diagnostic_mode")))
+    sys.exit(cleanup_freebayes("$mpileup", "$vcf", "$bases", "$csv", "$snp_cons", "$meta.id", "$meta.ref", bool("$diagnostic_mode")))
 

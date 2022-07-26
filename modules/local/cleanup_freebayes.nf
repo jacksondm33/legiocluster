@@ -8,11 +8,12 @@ process CLEANUP_FREEBAYES {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    tuple val(meta), path(fasta), path(mpileup), path(vcf)
+    tuple val(meta), path(mpileup), path(vcf), path(bases)
     val diagnostic_mode
 
     output:
     tuple val(meta), path("*_SNP_cons.txt"), emit: snp_cons
+    tuple val(meta), path("*.csv")         , emit: csv
     tuple val(meta), path("*.log")         , emit: log
     path "versions.yml"                    , emit: versions
 
@@ -24,9 +25,9 @@ process CLEANUP_FREEBAYES {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    log_file = "${prefix}.log"
-    snp_cons = "${prefix}_SNP_cons.txt"
-    output = "${prefix}.csv"
+    log_file  = "${prefix}.log"
+    snp_cons  = "${prefix}_SNP_cons.txt"
+    csv       = "${prefix}.csv"
 
     template 'cleanup_freebayes.py'
 }

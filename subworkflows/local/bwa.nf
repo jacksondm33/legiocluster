@@ -75,7 +75,11 @@ workflow BWA {
     PARSE_BWA_OUTPUT.out.csv
         .map {
             meta, csv ->
-            [ meta, csv.splitCsv().collect { it[0] }.first().toFloat() ]
+            [ meta ] + csv.splitCsv().collect()
+        }
+        .map {
+            meta, percent_mapped ->
+            [ meta, percent_mapped[0].toFloat() ]
         }
         .set { ch_percent_mapped }
 

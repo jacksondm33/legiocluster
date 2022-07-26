@@ -41,7 +41,7 @@ workflow FREEBAYES {
     PARSE_VCF_OUTPUT.out.csv
         .map {
             meta, csv ->
-            [ meta ] + csv.splitCsv().collect { it }
+            [ meta ] + csv.splitCsv().collect()
         }
         .map {
             meta, mutations ->

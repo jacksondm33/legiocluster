@@ -2,16 +2,17 @@ include { CLEANUP_FREEBAYES } from '../../modules/local/cleanup_freebayes'
 
 workflow MST {
     take:
-    fasta // channel: [ val(meta), fasta ]
     mpileup
     vcf
+    snp_cons
+    bases
 
     main:
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
     CLEANUP_FREEBAYES (
-        fasta.join(mpileup).join(vcf),
+        mpileup.join(vcf).join(bases),
         false
     )
 
