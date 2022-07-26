@@ -25,7 +25,8 @@ workflow FASTQC {
     )
 
     CALCULATE_COVERAGE (
-        proc_reads.join(UNZIP.out.unzipped_archives)
+        proc_reads.join(UNZIP.out.unzipped_archives),
+        params.med_genome_len
     )
 
     // Collect reports

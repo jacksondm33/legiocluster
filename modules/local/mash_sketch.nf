@@ -1,13 +1,16 @@
 process MASH_SKETCH {
     tag "$meta.id"
     label 'process_medium'
-    conda (params.enable_conda ? "bioconda::mash=2.3" : null)
+
+    conda (params.enable_conda ? "bioconda::mash=2.1" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mash:2.3--he348c14_1' :
-        'quay.io/biocontainers/mash:2.3--he348c14_1' }"
+        'https://depot.galaxyproject.org/singularity/mash:2.1' :
+        'staphb/mash:2.1' }"
 
     input:
     tuple val(meta), path(reads)
+    val use_m
+    val use_k_s
 
     output:
     tuple val(meta), path("*.msh"), emit: mash
@@ -21,11 +24,14 @@ process MASH_SKETCH {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def output = "${prefix}.msh"
+    def m_param = use_m ? '-m 2' : ''
+    def k_s_param = use_k_s ? '-k 16 -s 400' : ''
     """
     mash \\
         sketch \\
-        -p $task.cpus \\
         -o $output \\
+        $m_param \\
+        $k_s_param \\
         $args \\
         $reads \\
         > ${prefix}.log

@@ -2,10 +2,10 @@ process SPADES {
     tag "$meta.id"
     label 'process_high'
 
-    conda (params.enable_conda ? 'bioconda::spades=3.15.3' : null)
+    conda (params.enable_conda ? 'bioconda::spades=3.12.0' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/spades:3.15.3--h95f258a_0' :
-        'quay.io/biocontainers/spades:3.15.3--h95f258a_0' }"
+        'https://depot.galaxyproject.org/singularity/spades:3.12.0' :
+        'staphb/spades:3.12.0' }"
 
     input:
     tuple val(meta), path(reads), val(max_read_len)
@@ -38,7 +38,7 @@ process SPADES {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
+        spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes v//; s/ .*\$//')
     END_VERSIONS
     """
 }

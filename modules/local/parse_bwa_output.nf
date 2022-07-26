@@ -8,7 +8,7 @@ process PARSE_BWA_OUTPUT {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(fasta), path(sam), path(flagstat), path(idxstats)
+    tuple val(meta), path(fasta), path(sam), path(flagstat), path(idxstats), val(mapped_threshold)
 
     output:
     tuple val(meta), path("*.csv")               , emit: csv
@@ -22,10 +22,6 @@ process PARSE_BWA_OUTPUT {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}_${meta.ref}"
-    def mapped_threshold_param =
-        meta.set_ref != 'NO_FILE' ? '--mapped-threshold 0' :
-        meta.make_ref == 'true' ? '--mapped-threshold 100' :
-        "--mapped-threshold $params.mapped_threshold"
     """
     parse_bwa_output.py \\
         --flagstat-file $flagstat \\
@@ -34,7 +30,7 @@ process PARSE_BWA_OUTPUT {
         --reference-file $fasta \\
         --report-file ${prefix}_report.txt \\
         --sam-file $sam \\
-        $mapped_threshold_param \\
+        --mapped-threshold $mapped_threshold \\
         $args \\
         > ${prefix}.log
 

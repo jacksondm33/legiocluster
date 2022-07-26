@@ -2,10 +2,10 @@ process FASTQC {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "bioconda::fastqc=0.11.9" : null)
+    conda (params.enable_conda ? "bioconda::fastqc=0.11.8" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastqc:0.11.9--0' :
-        'quay.io/biocontainers/fastqc:0.11.9--0' }"
+        'https://depot.galaxyproject.org/singularity/fastqc:0.11.8' :
+        'staphb/fastqc:0.11.8' }"
 
     input:
     tuple val(meta), path(reads)
@@ -31,7 +31,7 @@ process FASTQC {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        fastqc: \$( fastqc --version | sed -e "s/FastQC v//g" )
+        fastqc: \$(fastqc --version | sed -e "s/FastQC v//g" )
     END_VERSIONS
     """
 }

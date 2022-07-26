@@ -50,6 +50,8 @@ include { BWA_FA      } from '../subworkflows/local/bwa_fa'
 include { BWA         } from '../subworkflows/local/bwa'
 include { QUAST       } from '../subworkflows/local/quast'
 include { QUALIMAP    } from '../subworkflows/local/qualimap'
+include { FREEBAYES   } from '../subworkflows/local/freebayes'
+include { MST         } from '../subworkflows/local/mst'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,9 +83,34 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.reads
     )
 
+    // Create species fastas channel [ meta(), [ fastas ] ]
+    Channel.fromPath(params.species_refs)
+        .collect()
+        .map { [ [:], it ] }
+        .set { ch_species_fastas }
+
+    // Create strain fasta channel [ meta(ref), fasta ]
+    Channel.fromPath(params.strain_refs)
+        .map {
+            fasta ->
+            [ [ref: fasta.name], fasta ]
+        }
+        .set { ch_strain_fasta }
+
     // Mash sketch (species)
     MASH_SKETCH_SPECIES (
-        Channel.fromPath(params.species_refs).collect().map { [ [:], it ] }
+        ch_species_fastas,
+        false,
+        true
+    )
+
+    // Mash sketch (strains)
+    MASH_SKETCH_STRAINS (
+        ch_strain_fasta
+            .collect { it[1] }
+            .map { [ [:], it ] },
+        false,
+        false
     )
 
     // Run mash fq
@@ -98,25 +125,10 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.max_read_len
     )
 
-    // Create strain fasta channel [ meta(ref), fasta ]
-    Channel.fromPath(params.strain_refs)
-        .map {
-            fasta ->
-            [ [ref: fasta.name], fasta ]
-        }
-        .set { ch_strain_fasta }
-
-    // Mash sketch (strains)
-    MASH_SKETCH_STRAINS (
-        ch_strain_fasta
-            .collect { it[1] }
-            .map { [ [:], it ] }
-    )
-
     // Run mash fa
     MASH_FA (
         TRIMMOMATIC.out.reads,
-        SPADES.out.contigs,
+        SPADES.out.filtered_contigs,
         MASH_SKETCH_STRAINS.out.mash.map { it[1] }
     )
 
@@ -148,7 +160,7 @@ workflow LEGIOCLUSTER {
             .unique()
     )
 
-    // Create bwa reads, fasta, index, fai channels
+    // Create bwa input channels
     ch_bwa_reads_fasta
         .cross(
             BWA_FA.out.index
@@ -161,37 +173,48 @@ workflow LEGIOCLUSTER {
             fasta: [ meta, fasta ]
             index: [ meta, index ]
             fai: [ meta, fai ]
+            mapped_threshold: [ meta, meta.set_ref != 'NO_FILE' ? 0 : meta.make_ref == 'true' ? 100 : params.mapped_threshold ]
         }
-        .set { ch_bwa }
+        .set { ch_bwa_input }
 
     // Run bwa
     BWA (
-        ch_bwa.reads,
-        ch_bwa.fasta,
-        ch_bwa.index,
-        ch_bwa.fai
+        ch_bwa_input.reads,
+        ch_bwa_input.fasta,
+        ch_bwa_input.index,
+        ch_bwa_input.fai,
+        ch_bwa_input.mapped_threshold
     )
 
     BWA.out.percent_mapped
         .join(BWA.out.depth)
         .join(BWA.out.bam)
-        .cross(ch_strain_fasta) { it[0].ref }
-        .map { it[0] + [ it[1][1] ] }
+        .join(BWA.out.mpileup)
+        .join(ch_bwa_input.fasta)
+        .join(ch_bwa_input.fai)
+        .join(ch_bwa_input.mapped_threshold)
         .map {
-            meta, percent_mapped, depth, bam, fasta ->
-            [ meta - [ref: meta.ref], [percent_mapped, depth, bam, fasta] ]
+            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ->
+            [ meta - [ref: meta.ref], [ percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ] ]
         }
         .groupTuple()
         .map {
-            meta, percent_mapped_depth_bam_fasta ->
-            [ meta ] + percent_mapped_depth_bam_fasta.max { it[0] }
+            meta, output ->
+            [ meta ] + output.max { it[0] }
         }
         .multiMap {
-            meta, percent_mapped, depth, bam, fasta ->
+            meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold ->
             percent_mapped: [ meta, percent_mapped ]
             depth: [ meta, depth ]
             bam: [ meta, bam ]
+            mpileup: [ meta, mpileup ]
             fasta: [ meta, fasta ]
+            fai: [ meta, fai ]
+            max_no_ns:          [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 999999999 : params.max_no_ns          ]
+            max_no_gaps:        [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 999999999 : params.max_no_gaps        ]
+            snp_threshold:      [ meta, meta.set_ref != 'NO_FILE' ? 999999999 : meta.make_ref == 'true' ? 0         : params.snp_threshold      ]
+            min_percent_mapped: [ meta, meta.set_ref != 'NO_FILE' ? 0         : meta.make_ref == 'true' ? 0         : params.min_percent_mapped ]
+            mapped_threshold:   [ meta, mapped_threshold ]
         }
         .set { ch_bwa_output }
 
@@ -200,13 +223,62 @@ workflow LEGIOCLUSTER {
         SPADES.out.contigs,
         ch_bwa_output.fasta,
         ch_bwa_output.depth,
-        ch_bwa_output.percent_mapped
+        ch_bwa_output.percent_mapped,
+        ch_bwa_output.max_no_ns,
+        ch_bwa_output.max_no_gaps,
+        ch_bwa_output.min_percent_mapped,
+        ch_bwa_output.mapped_threshold
     )
 
     // Run qualimap
     QUALIMAP (
         ch_bwa_output.bam
     )
+
+    // Run freebayes
+    FREEBAYES (
+        ch_bwa_output.bam,
+        ch_bwa_output.fasta,
+        ch_bwa_output.fai,
+        ch_bwa_output.snp_threshold,
+        QUAST.out.depth_mean,
+        QUAST.out.depth_sd
+    )
+
+    FREEBAYES.out.mutations
+        .join(ch_bwa_output.percent_mapped)
+        .join(ch_bwa_output.snp_threshold)
+        .join(ch_bwa_output.mapped_threshold)
+        .branch {
+            meta, mutations, percent_mapped, snp_threshold, mapped_threshold ->
+            close: (mutations[0] < snp_threshold) && (percent_mapped > mapped_threshold)
+            distant: true
+        }
+        .set { ch_distances }
+
+    ch_distances.close
+        .join(ch_bwa_output.fasta)
+        .join(ch_bwa_output.mpileup)
+        .join(FREEBAYES.out.vcf)
+        .multiMap {
+            meta, mutations, percent_mapped, snp_threshold, mapped_threshold, fasta, mpileup, vcf ->
+            fasta: [ meta, fasta ]
+            mpileup: [ meta, mpileup ]
+            vcf: [ meta, vcf ]
+        }
+        .set { ch_mst }
+
+    // Close reference
+    MST (
+        ch_mst.fasta,
+        ch_mst.mpileup,
+        ch_mst.vcf
+    )
+
+    // Distant reference
+    // MAKE_REF (
+    //     ch_distances.distant
+    // )
 
     // Collect reports
     ch_reports = ch_reports.concat(TRIMMOMATIC.out.reports)
@@ -217,6 +289,7 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(BWA.out.reports)
     ch_reports = ch_reports.concat(QUAST.out.reports)
     ch_reports = ch_reports.concat(QUALIMAP.out.reports)
+    ch_reports = ch_reports.concat(FREEBAYES.out.reports)
 
     CREATE_REPORT (
         ch_reports
@@ -225,7 +298,8 @@ workflow LEGIOCLUSTER {
                 [ meta - [ref: meta.ref], report ]
             }
             .groupTuple()
-            .join(CHECK_INPUT.out.reads)
+            .join(CHECK_INPUT.out.reads),
+        params.sp_abbr
     )
 
     // Collect versions
@@ -239,6 +313,7 @@ workflow LEGIOCLUSTER {
     ch_versions = ch_versions.mix(BWA.out.versions)
     ch_versions = ch_versions.mix(QUAST.out.versions)
     ch_versions = ch_versions.mix(QUALIMAP.out.versions)
+    ch_versions = ch_versions.mix(FREEBAYES.out.versions)
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')

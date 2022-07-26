@@ -16,6 +16,7 @@ workflow BWA {
     fasta // channel: [ meta, fasta ]
     index // channel: [ meta, index ]
     fai   // channel: [ meta, fai ]
+    mapped_threshold
 
     main:
     ch_reports = Channel.empty()
@@ -68,6 +69,7 @@ workflow BWA {
             .join(BWA_MEM.out.sam)
             .join(SAMTOOLS_FLAGSTAT.out.flagstat)
             .join(SAMTOOLS_IDXSTATS.out.idxstats)
+            .join(mapped_threshold)
     )
 
     PARSE_BWA_OUTPUT.out.csv
@@ -97,6 +99,7 @@ workflow BWA {
     percent_mapped = ch_percent_mapped
     depth = SAMTOOLS_DEPTH.out.depth
     bam = PICARD_MARKDUPLICATES.out.bam
+    mpileup = BCFTOOLS_VIEW.out.vcf
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

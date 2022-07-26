@@ -2,14 +2,15 @@ process MASH_DIST {
     tag "$meta.id"
     label 'process_low'
 
-    conda (params.enable_conda ? "bioconda::mash=2.3" : null)
+    conda (params.enable_conda ? "bioconda::mash=2.1" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mash:2.3--he348c14_1' :
-        'quay.io/biocontainers/mash:2.3--he348c14_1' }"
+        'https://depot.galaxyproject.org/singularity/mash:2.1' :
+        'staphb/mash:2.1' }"
 
     input:
     tuple val(meta), path(query)
     path reference
+    val suffix
 
     output:
     tuple val(meta), path("*.tab"), emit: dist
@@ -21,7 +22,6 @@ process MASH_DIST {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def suffix = task.ext.suffix ?: ''
     def output = "${prefix}_distances_${suffix}.tab"
     """
     mash \\

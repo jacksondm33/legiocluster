@@ -8,12 +8,10 @@ process COUNT_NNN_GAPS {
         'quay.io/biocontainers/matplotlib:3.1.2' }"
 
     input:
-    tuple val(meta), path(depth), val(percent_mapped)
+    tuple val(meta), path(depth), val(percent_mapped), val(max_no_ns), val(max_no_gaps), val(mapped_threshold)
     val min_depth
     val gap_length
     val interval
-    val max_no_ns
-    val max_no_gaps
 
     output:
     tuple val(meta), path("*_histo_depths.png"), emit: histo_depths
@@ -29,10 +27,6 @@ process COUNT_NNN_GAPS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def mapped_threshold_param =
-        meta.set_ref != 'NO_FILE' ? '--mapped-threshold 0' :
-        meta.make_ref == 'true' ? '--mapped-threshold 100' :
-        "--mapped-threshold $params.mapped_threshold"
     """
     count_nnn_gaps.py \\
         --depth-file $depth \\
@@ -46,7 +40,7 @@ process COUNT_NNN_GAPS {
         --interval $interval \\
         --max-no-ns $max_no_ns \\
         --max-no-gaps $max_no_gaps \\
-        $mapped_threshold_param \\
+        --mapped-threshold $mapped_threshold \\
         $args \\
         > ${prefix}.log
 

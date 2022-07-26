@@ -4,8 +4,8 @@ process TRIMMOMATIC {
 
     conda (params.enable_conda ? "bioconda::trimmomatic=0.39" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/trimmomatic:0.39--hdfd78af_2':
-        'quay.io/biocontainers/trimmomatic:0.39--hdfd78af_2' }"
+        'https://depot.galaxyproject.org/singularity/trimmomatic:0.39':
+        'staphb/trimmomatic:0.39' }"
 
     input:
     tuple val(meta), path(reads)
@@ -23,13 +23,11 @@ process TRIMMOMATIC {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def maxmem = task.memory.toGiga()
     def trimmed = meta.single_end ? "SE" : "PE"
     def output = "${prefix}_1_paired.fastq ${prefix}_1_unpaired.fastq ${prefix}_2_paired.fastq ${prefix}_2_unpaired.fastq"
     def qual_trim = task.ext.args2 ?: ''
     """
     trimmomatic \\
-        -Xmx${maxmem}g \\
         $trimmed \\
         -threads $task.cpus \\
         -trimlog ${prefix}.log \\

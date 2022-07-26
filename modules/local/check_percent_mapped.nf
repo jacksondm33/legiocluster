@@ -8,7 +8,7 @@ process CHECK_PERCENT_MAPPED {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), val(percent_mapped)
+    tuple val(meta), val(percent_mapped), val(min_percent_mapped)
 
     output:
     tuple val(meta), path("*.log"), emit: log
@@ -20,7 +20,6 @@ process CHECK_PERCENT_MAPPED {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def min_percent_mapped = (meta.set_ref != 'NO_FILE' || meta.make_ref == 'true') ? 0 : params.min_percent_mapped
     """
     check_percent_mapped.py \\
         --percent-mapped $percent_mapped \\

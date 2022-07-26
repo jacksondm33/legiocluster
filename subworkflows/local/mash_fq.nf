@@ -17,17 +17,29 @@ workflow MASH_FQ {
     )
 
     MASH_SKETCH_FQ (
-        CONCATENATE.out.cat
+        CONCATENATE.out.cat,
+        true,
+        true
     )
 
     MASH_DIST_FQ (
         MASH_SKETCH_FQ.out.mash,
-        mash
+        mash,
+        'FAvNCBI'
     )
 
     PARSE_MASH_OUTPUT (
         MASH_DIST_FQ.out.dist,
-        Channel.of(params.species.collect { sp_abbr, info -> sp_abbr + ',' + info[0] }).flatten().collectFile(name: "species.csv", newLine: true, sort: true).first()
+        Channel.of(
+            params.species
+                .collect {
+                    sp_abbr, info ->
+                    sp_abbr + ',' + info[0]
+                })
+            .flatten()
+            .collectFile(name: "species.csv", newLine: true, sort: true)
+            .first(),
+        params.sp_abbr
     )
 
     // Collect reports

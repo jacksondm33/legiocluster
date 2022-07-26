@@ -14,17 +14,21 @@ workflow MASH_FA {
     ch_versions = Channel.empty()
 
     MASH_SKETCH (
-        fasta
+        fasta,
+        false,
+        false
     )
 
     MASH_DIST_FA (
         MASH_SKETCH.out.mash,
-        mash
+        mash,
+        'FAvNCBI'
     )
 
     PARSE_MASH_OUTPUT (
         MASH_DIST_FA.out.dist,
-        Channel.fromPath('NO_FILE').first()
+        Channel.fromPath('NO_FILE').first(),
+        params.sp_abbr
     )
 
     // Collect reports

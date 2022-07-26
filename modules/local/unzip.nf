@@ -36,7 +36,7 @@ process UNZIP {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        7za: \$(echo \$(7za --help) | sed 's/.*p7zip Version //; s/(.*//')
+        7za: \$(echo \$(7za --help) | sed 's/.*p7zip Version //; s/ (.*//')
     END_VERSIONS
     """
 }

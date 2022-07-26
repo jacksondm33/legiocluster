@@ -2,10 +2,10 @@ process QUALIMAP_BAMQC {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "bioconda::qualimap=2.2.2d" : null)
+    conda (params.enable_conda ? "bioconda::qualimap=2.2.1" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/qualimap:2.2.2d--1' :
-        'quay.io/biocontainers/qualimap:2.2.2d--1' }"
+        'https://depot.galaxyproject.org/singularity/qualimap:2.2.1' :
+        'pegi3s/qualimap:2.2.1' }"
 
     input:
     tuple val(meta), path(bam)

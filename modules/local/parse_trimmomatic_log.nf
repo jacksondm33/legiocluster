@@ -9,6 +9,7 @@ process PARSE_TRIMMOMATIC_LOG {
 
     input:
     tuple val(meta), path("trimlog.txt")
+    val min_reads
 
     output:
     tuple val(meta), path("*_report.txt"), emit: report
@@ -27,6 +28,7 @@ process PARSE_TRIMMOMATIC_LOG {
         --output-file ${prefix}.csv \\
         --report-file ${prefix}_report.txt \\
         --trimmomatic-log-file trimlog.txt \\
+        --min-reads $min_reads \\
         $args \\
         > ${prefix}.log
 

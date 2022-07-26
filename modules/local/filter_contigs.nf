@@ -9,11 +9,13 @@ process FILTER_CONTIGS {
 
     input:
     tuple val(meta), path(contigs)
+    val min_contig_len
+    val min_contig_cov
 
     output:
-    tuple val(meta), path("*_contigs_filtered.fasta"), emit: filtered_contigs
-    tuple val(meta), path("*.log")                   , emit: log
-    path "versions.yml"                              , emit: versions
+    tuple val(meta), path("*.fa") , emit: filtered_contigs
+    tuple val(meta), path("*.log"), emit: log
+    path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,11 +23,13 @@ process FILTER_CONTIGS {
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_contigs_filtered.fasta"
+    def output = "${prefix}.fa"
     """
     filter_contigs.py \\
         --contigs-in $contigs \\
         --contigs-out $output \\
+        --min-contig-len $min_contig_len \\
+        --min-contig-cov $min_contig_cov \\
         $args \\
         > ${prefix}.log
 

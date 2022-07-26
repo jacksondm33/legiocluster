@@ -9,6 +9,7 @@ process CALCULATE_COVERAGE {
 
     input:
     tuple val(meta), path(reads), path(fastqc_results)
+    val med_genome_len
 
     output:
     tuple val(meta), path("*_report.txt"), emit: report
@@ -24,7 +25,7 @@ process CALCULATE_COVERAGE {
     """
     calculate_coverage.py \\
         --fastqc-results ${fastqc_results[1]} \\
-        --med-genome-len $params.med_genome_len \\
+        --med-genome-len $med_genome_len \\
         --reads-file ${reads[1]} \\
         --report-file ${prefix}_report.txt \\
         $args \\

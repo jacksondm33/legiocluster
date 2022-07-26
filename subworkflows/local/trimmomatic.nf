@@ -26,7 +26,8 @@ workflow TRIMMOMATIC {
     )
 
     PARSE_TRIMMOMATIC_LOG (
-        TRIMMOMATIC_MODULE.out.log
+        TRIMMOMATIC_MODULE.out.log,
+        params.min_reads
     )
 
     PARSE_TRIMMOMATIC_LOG.out.csv
@@ -41,10 +42,31 @@ workflow TRIMMOMATIC {
         }
         .set { ch_output }
 
+    TRIMMOMATIC_MODULE.out.trimmed_reads
+        .join(ch_output.both_surviving)
+        .branch {
+            meta, reads, both_surviving ->
+            reduce: both_surviving > params.read_cutoff
+            skip: true
+        }
+        .set { ch_reduce }
 
     REDUCE_READS (
-        TRIMMOMATIC_MODULE.out.trimmed_reads.join(ch_output.both_surviving)
+        ch_reduce.reduce
+            .map {
+                meta, reads, both_surviving ->
+                [ meta, reads ]
+            },
+        true,
+        params.read_cutoff
     )
+
+    ch_reduce.skip
+        .map {
+            meta, reads, both_surviving ->
+            [ meta, reads ]
+        }
+        .set { ch_skipped_reads }
 
     // Collect reports
     ch_reports = ch_reports.concat(PARSE_TRIMMOMATIC_LOG.out.report)
@@ -57,7 +79,7 @@ workflow TRIMMOMATIC {
     ch_versions = ch_versions.mix(REDUCE_READS.out.versions)
 
     emit:
-    reads = REDUCE_READS.out.reduced_reads
+    reads = REDUCE_READS.out.reduced_reads.mix(ch_skipped_reads)
     max_read_len = ch_output.max_read_len
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]

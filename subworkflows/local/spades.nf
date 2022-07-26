@@ -16,11 +16,16 @@ workflow SPADES {
     )
 
     FILTER_CONTIGS (
-        SPADES_MODULE.out.contigs
+        SPADES_MODULE.out.contigs,
+        params.min_contig_len,
+        params.min_contig_cov
     )
 
     PARSE_SPADES_OUTPUT (
-        SPADES_MODULE.out.contigs
+        SPADES_MODULE.out.contigs,
+        params.min_contig_len,
+        params.min_contig_cov,
+        params.max_no_contigs
     )
 
     // Collect reports
@@ -32,7 +37,8 @@ workflow SPADES {
     ch_versions = ch_versions.mix(PARSE_SPADES_OUTPUT.out.versions)
 
     emit:
-    contigs = FILTER_CONTIGS.out.filtered_contigs
+    contigs = SPADES_MODULE.out.contigs
+    filtered_contigs = FILTER_CONTIGS.out.filtered_contigs
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

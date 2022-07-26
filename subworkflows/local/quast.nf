@@ -9,13 +9,17 @@ workflow QUAST {
     fasta    // channel: [ val(meta), [ proc_reads ] ]
     depth
     percent_mapped
+    max_no_ns
+    max_no_gaps
+    min_percent_mapped
+    mapped_threshold
 
     main:
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
     CHECK_PERCENT_MAPPED (
-        percent_mapped
+        percent_mapped.join(min_percent_mapped)
     )
 
     QUAST_MODULE (
@@ -27,12 +31,10 @@ workflow QUAST {
     )
 
     COUNT_NNN_GAPS (
-        depth.join(percent_mapped),
+        depth.join(percent_mapped).join(max_no_ns).join(max_no_gaps).join(mapped_threshold),
         params.min_depth,
         params.gap_length,
-        params.interval,
-        params.max_no_ns,
-        params.max_no_gaps
+        params.interval
     )
 
     COUNT_NNN_GAPS.out.csv

@@ -10,6 +10,7 @@ process PARSE_MASH_OUTPUT {
     input:
     tuple val(meta), path(dist)
     path species
+    val sp_abbr
 
     output:
     tuple val(meta), path("*_fastas.csv"), emit: fastas
@@ -29,7 +30,7 @@ process PARSE_MASH_OUTPUT {
         --dist-file $dist \\
         --references-file ${prefix}_fastas.csv \\
         --report-file ${prefix}_report.txt \\
-        --sp-abbr $params.sp_abbr \\
+        --sp-abbr $sp_abbr \\
         $species_file_param \\
         $args \\
         > ${prefix}.log
