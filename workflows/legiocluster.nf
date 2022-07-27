@@ -94,7 +94,7 @@ workflow LEGIOCLUSTER {
     Channel.fromPath(params.strain_refs)
         .map {
             fasta ->
-            [ [ref: fasta.name], fasta ]
+            [ [ref: fasta.baseName], fasta ]
         }
         .set { ch_strain_fasta }
 
@@ -128,7 +128,6 @@ workflow LEGIOCLUSTER {
 
     // Run mash fa
     MASH_FA (
-        TRIMMOMATIC.out.reads,
         SPADES.out.filtered_contigs,
         MASH_SKETCH_STRAINS.out.mash.map { it[1] }
     )
@@ -145,7 +144,7 @@ workflow LEGIOCLUSTER {
             by: 0)
         .map {
             meta, reads, fasta ->
-            [ meta + [ref: fasta], reads ]
+            [ meta + [ref: file(fasta).baseName], reads ]
         }
         .cross(ch_strain_fasta) { it[0].ref }
         .map { it[0] + [ it[1][1] ] }
@@ -210,7 +209,7 @@ workflow LEGIOCLUSTER {
         }
         .map {
             meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ->
-            [ meta + [ref: fasta.name], percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ]
+            [ meta + [ref: fasta.baseName], percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ]
         }
         .multiMap {
             meta, percent_mapped, depth, bam, mpileup, fasta, fai, mapped_threshold, contigs ->
@@ -276,30 +275,41 @@ workflow LEGIOCLUSTER {
             fasta: [ meta, fasta ]
             mpileup: [ meta, mpileup ]
             vcf: [ meta, vcf ]
+            vcfs: [ meta, file("$params.vcfs/$meta.ref", type: 'dir') ]
         }
         .set { ch_mst_fa }
 
+    ch_mst_fa.fasta
+        .join(ch_mst_fa.vcfs)
+        .map {
+            meta, fasta, vcfs ->
+            [ [ref: meta.ref], fasta, vcfs ]
+        }
+        .unique()
+        .multiMap {
+            meta, fasta, vcfs ->
+            fasta: [ meta, fasta ]
+            vcfs:  [ meta, vcfs ]
+        }
+        .set { ch_mst_fa_unique }
+
     MST_FA (
-        ch_mst_fa.fasta
-            .map {
-                meta, fasta ->
-                [ [ref: meta.ref], fasta ]
-            }
-            .unique()
+        ch_mst_fa_unique.fasta,
+        ch_mst_fa_unique.vcfs
     )
 
     ch_mst_fa.mpileup
         .join(ch_mst_fa.vcf)
+        .join(ch_mst_fa.vcfs)
         .cross(
-            MST_FA.out.snp_cons
-                .join(MST_FA.out.bases)
+            MST_FA.out.bases
         ) { it[0].ref }
-        .map { it[0] + [ it[1][1], it[1][2] ] }
+        .map { it[0] + [ it[1][1] ] }
         .multiMap {
-            meta, mpileup, vcf, snp_cons, bases ->
+            meta, mpileup, vcf, vcfs, bases ->
             mpileup:  [ meta, mpileup ]
             vcf:      [ meta, vcf ]
-            snp_cons: [ meta, snp_cons ]
+            vcfs:     [ meta, vcfs ]
             bases:    [ meta, bases ]
         }
         .set { ch_mst }
@@ -308,7 +318,7 @@ workflow LEGIOCLUSTER {
     MST (
         ch_mst.mpileup,
         ch_mst.vcf,
-        ch_mst.snp_cons,
+        ch_mst.vcfs,
         ch_mst.bases
     )
 

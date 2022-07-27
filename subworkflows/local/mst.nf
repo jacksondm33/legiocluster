@@ -1,10 +1,11 @@
 include { CLEANUP_FREEBAYES } from '../../modules/local/cleanup_freebayes'
+include { COMPARE_SNPS } from '../../modules/local/compare_snps'
 
 workflow MST {
     take:
     mpileup
     vcf
-    snp_cons
+    vcfs
     bases
 
     main:
@@ -12,12 +13,13 @@ workflow MST {
     ch_versions = Channel.empty()
 
     CLEANUP_FREEBAYES (
-        mpileup.join(vcf).join(bases),
+        mpileup.join(vcf).join(vcfs).join(bases),
         false
     )
 
-    // COMPARE_SNP (
-    // )
+    COMPARE_SNPS (
+        vcfs.join(CLEANUP_FREEBAYES.out.csv)
+    )
 
     // MAKE_MST (
     // )

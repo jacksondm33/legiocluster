@@ -6,7 +6,6 @@
 
 import csv
 import logging
-import os
 import platform
 import sys
 import yaml
@@ -399,12 +398,14 @@ def make_consensus(snp_cons_file, csv_file, isolate, reference, diagnostic_mode)
                             print('N', file=outfile)
 
 
-def cleanup_freebayes(mpileup_file, vcf_file, bases_file, csv_file, snp_cons_file, isolate, reference, diagnostic_mode):
+def cleanup_freebayes(mpileup_file, vcf_file, vcf_path, bases_file, csv_file, isolate, reference, diagnostic_mode):
     """
     main function
     param: str isolate = isolate name, e.g.: 'IDR001234'
     output: a '_SNP_cons.txt' file added to the /VCF_folder
     """
+
+    snp_cons_file = vcf_path / (isolate + '_SNP_cons.txt')
 
     lo_bases = []
     with open(bases_file, 'r', newline='') as bases:
@@ -436,5 +437,5 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(cleanup_freebayes("$mpileup", "$vcf", "$bases", "$csv", "$snp_cons", "$meta.id", "$meta.ref", bool("$diagnostic_mode")))
+    sys.exit(cleanup_freebayes("$mpileup", "$vcf", Path("$vcfs"), "$bases", "$csv", "$meta.id", "$meta.ref", bool("$diagnostic_mode")))
 

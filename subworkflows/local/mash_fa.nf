@@ -5,7 +5,6 @@ include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_m
 
 workflow MASH_FA {
     take:
-    reads // channel: [ meta(id), [ reads ] ]
     fasta // channel: [ meta(id), fasta ]
     mash  // channel: [ mash ]
 
