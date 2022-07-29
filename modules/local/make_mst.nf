@@ -1,5 +1,5 @@
-process CLEANUP_FREEBAYES {
-    tag "$meta.id"
+process MAKE_MST {
+    tag "$meta.ref"
     label 'process_medium'
 
     conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
@@ -8,24 +8,24 @@ process CLEANUP_FREEBAYES {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    tuple val(meta), path(mpileup), path(vcf), path(vcfs), path(bases)
-    val diagnostic_mode
+    tuple val(meta), path(concat_pairwise_diffs)
+    val abr
 
     output:
-    tuple val(meta), path("*.csv"), emit: csv
-    tuple val(meta), path("*.log"), emit: log
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path(mst)     , emit: png
+    tuple val(meta), path(log_file), emit: log
+    path "versions.yml"            , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.ref}"
 
-    log_level = "INFO"
-    log_file  = "${prefix}.log"
-    csv       = "${prefix}.csv"
+    log_level            = "INFO"
+    mst                  = "${prefix}_MST_${abr}.png"
+    log_file             = "${prefix}.log"
 
-    template 'cleanup_freebayes.py'
+    template 'make_mst.py'
 }

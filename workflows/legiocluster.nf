@@ -35,6 +35,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // Modules
 include { MASH_SKETCH as MASH_SKETCH_SPECIES } from '../modules/local/mash_sketch'
 include { MASH_SKETCH as MASH_SKETCH_STRAINS } from '../modules/local/mash_sketch'
+include { CREATE_SNP_CONS_FA                 } from '../modules/local/create_snp_cons_fa'
+include { CREATE_SNP_CONS                    } from '../modules/local/create_snp_cons'
+include { COMPARE_SNPS                       } from '../modules/local/compare_snps'
 include { CREATE_REPORT                      } from '../modules/local/create_report'
 include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/local/custom_dumpsoftwareversions'
 include { MULTIQC                            } from '../modules/local/multiqc'
@@ -51,8 +54,7 @@ include { BWA         } from '../subworkflows/local/bwa'
 include { QUAST       } from '../subworkflows/local/quast'
 include { QUALIMAP    } from '../subworkflows/local/qualimap'
 include { FREEBAYES   } from '../subworkflows/local/freebayes'
-include { MST_FA      } from '../subworkflows/local/mst_fa'
-include { MST         } from '../subworkflows/local/mst'
+include { MAKE_MST    } from '../subworkflows/local/make_mst'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,60 +268,69 @@ workflow LEGIOCLUSTER {
         }
         .set { ch_distances }
 
+    // Freebayes close distances channel
     ch_distances.close
         .join(ch_bwa_output.fasta)
         .join(ch_bwa_output.mpileup)
         .join(FREEBAYES.out.vcf)
         .multiMap {
-            meta, mutations, percent_mapped, snp_threshold, mapped_threshold, fasta, mpileup, vcf ->
-            fasta: [ meta, fasta ]
-            mpileup: [ meta, mpileup ]
-            vcf: [ meta, vcf ]
-            vcfs: [ meta, file("$params.vcfs/$meta.ref", type: 'dir') ]
+            meta, mutations, percent_mapped, snp_threshold, mapped_threshold, fasta, mpileup, freebayes ->
+            fasta:     [ meta, fasta ]
+            mpileup:   [ meta, mpileup ]
+            freebayes: [ meta, freebayes ]
         }
-        .set { ch_mst_fa }
+        .set { ch_freebayes_close }
 
-    ch_mst_fa.fasta
-        .join(ch_mst_fa.vcfs)
-        .map {
-            meta, fasta, vcfs ->
-            [ [ref: meta.ref], fasta, vcfs ]
-        }
-        .unique()
-        .multiMap {
-            meta, fasta, vcfs ->
-            fasta: [ meta, fasta ]
-            vcfs:  [ meta, vcfs ]
-        }
-        .set { ch_mst_fa_unique }
-
-    MST_FA (
-        ch_mst_fa_unique.fasta,
-        ch_mst_fa_unique.vcfs
+    // Create SNP consensus (fasta)
+    CREATE_SNP_CONS_FA (
+        ch_freebayes_close.fasta
+            .map {
+                meta, fasta ->
+                [ [ref: meta.ref], fasta ]
+            }
+            .unique()
     )
 
-    ch_mst_fa.mpileup
-        .join(ch_mst_fa.vcf)
-        .join(ch_mst_fa.vcfs)
+    // Create SNP consensus input channel
+    ch_freebayes_close.mpileup
+        .join(ch_freebayes_close.freebayes)
         .cross(
-            MST_FA.out.bases
+            CREATE_SNP_CONS_FA.out.bases
         ) { it[0].ref }
-        .map { it[0] + [ it[1][1] ] }
-        .multiMap {
-            meta, mpileup, vcf, vcfs, bases ->
-            mpileup:  [ meta, mpileup ]
-            vcf:      [ meta, vcf ]
-            vcfs:     [ meta, vcfs ]
-            bases:    [ meta, bases ]
-        }
-        .set { ch_mst }
+        .map { it[0] + it[1][1..-1] }
+        .set { ch_create_snp_cons_in }
 
-    // Close reference
-    MST (
-        ch_mst.mpileup,
-        ch_mst.vcf,
-        ch_mst.vcfs,
-        ch_mst.bases
+    // Create SNP consensus
+    CREATE_SNP_CONS (
+        ch_create_snp_cons_in,
+        false
+    )
+
+    // Compare SNPs input channel
+    CREATE_SNP_CONS_FA.out.snp_cons
+        .cross(
+            CREATE_SNP_CONS.out.snp_cons
+        ) { it[0].ref }
+        .groupTuple()
+        .map { [ it[1], it[1].collect { it[1] } + [ it[0][1] ] ] }
+        .transpose(by: 0)
+        .map { it[0] + [ it[1] - [ it[0][1] ] ] }
+        .set { ch_compare_snps_in }
+
+    COMPARE_SNPS (
+        ch_compare_snps_in
+    )
+
+    COMPARE_SNPS.out.pairwise_diffs
+        .map {
+            meta, pairwise_diffs ->
+            [ [ref: meta.ref], pairwise_diffs ]
+        }
+        .groupTuple()
+        .set { ch_make_mst_in }
+
+    MAKE_MST (
+        ch_make_mst_in
     )
 
     // Distant reference
