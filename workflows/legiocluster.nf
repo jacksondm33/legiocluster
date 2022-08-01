@@ -190,6 +190,8 @@ workflow LEGIOCLUSTER {
         ch_bwa_input.mapped_threshold
     )
 
+    // TODO: Make sure selected reference is actually valid
+
     BWA.out.percent_mapped
         .join(BWA.out.depth)
         .join(BWA.out.bam)
