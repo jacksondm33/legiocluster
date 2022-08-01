@@ -4,11 +4,12 @@
 """Parse vcf output."""
 
 
-import argparse
 import csv
 import logging
 import matplotlib.pyplot as plt
+import platform
 import sys
+import yaml
 from numpy import ceil
 from pathlib import Path
 
@@ -112,7 +113,7 @@ def read_vcf_file(vcf_file):
     # extract data from the vcf-file
     with open(vcf_file, 'r') as in_file:
         for line in in_file:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             if line.startswith('#'): # ignore header or comment rows
                 continue
             else:
@@ -187,18 +188,18 @@ def write_to_file(report_file, reference_file, isolate, to_mutations, ref_seq_le
 
     # write results to the report
     with open(report_file, 'a') as report:
-        print('\n\nSNPs and INDEL events between ' + isolate\
+        print('\\n\\nSNPs and INDEL events between ' + isolate\
               + ' and reference ' + str(reference_file)[:-3] + ' (FreeBayes):',
               file=report)
 
-        print('\nFound', data_str, 'SNPs and INDEL events compared to a ' \
+        print('\\nFound', data_str, 'SNPs and INDEL events compared to a ' \
               + 'reference genome of', ref_seq_len, 'bp.', file=report)
         print('(Note that the indel event count might be slightly lower in'\
-              ' the SNP-matrix.)\n', file=report)
+              ' the SNP-matrix.)\\n', file=report)
 
         # if too many SNPs/INDELs, make the query it's own reference
         if to_mutations[0] >= SNP_THRESHOLD:
-            print('\nNOTE:\nNumber of SNPs and INDEL events above threshold. '\
+            print('\\nNOTE:\\nNumber of SNPs and INDEL events above threshold. '\
                   + 'Adding the isolate to the list of reference genomes.',
                   file=report)
 
@@ -246,13 +247,13 @@ def seq_len(reference_file):
     seq = ''
     with open(reference_file, 'r') as infile:
         for line in infile:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             if not line.startswith('>'):
                 seq = seq + line
     return len(seq)
 
 
-def parse_vcf_output(isolate, vcf_file, reference_file, mutation_dist_file, output_file, report_file, SNP_THRESHOLD):
+def parse_vcf_output(vcf_file, reference_file, mutation_dist_file, output_file, report_file, isolate, SNP_THRESHOLD):
     """Parses the vcf file and writes the results to the report."""
 
     # reads the freebayes VCF file
@@ -276,82 +277,15 @@ def parse_vcf_output(isolate, vcf_file, reference_file, mutation_dist_file, outp
         output_writer.writerow(to_mutations)
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--isolate",
-        metavar="ISOLATE",
-        help="Isolate",
-        required=True,
-    )
-    parser.add_argument(
-        "--mutation-dist-file",
-        metavar="MUTATION_DIST_FILE",
-        type=Path,
-        help="Output mutation dist file",
-        required=True,
-    )
-    parser.add_argument(
-        "--output-file",
-        metavar="OUTPUT_FILE",
-        type=Path,
-        help="Output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--reference-file",
-        metavar="REFERENCE_FILE",
-        type=Path,
-        help="Input reference file",
-        required=True,
-    )
-    parser.add_argument(
-        "--report-file",
-        metavar="REPORT_FILE",
-        type=Path,
-        help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--vcf-file",
-        metavar="VCF_FILE",
-        type=Path,
-        help="Input vcf file",
-        required=True,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--snp-threshold",
-        metavar="SNP_THRESHOLD",
-        type=int,
-        help="SNP threshold",
-        default=999999999,
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.vcf_file.is_file():
-        logger.error(f"The given input file {args.vcf_file} was not found!")
-        sys.exit(2)
-    if not args.reference_file.is_file():
-        logger.error(f"The given input file {args.reference_file} was not found!")
-        sys.exit(2)
-    args.mutation_dist_file.parent.mkdir(parents=True, exist_ok=True)
-    args.output_file.parent.mkdir(parents=True, exist_ok=True)
-    args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_vcf_output(args.isolate, args.vcf_file, args.reference_file, args.mutation_dist_file, args.output_file, args.report_file, args.snp_threshold)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(parse_vcf_output("$vcf", "$fasta", "$mutation_dist", "$output", "$report", "$meta.id", int("$snp_threshold")))

@@ -28,7 +28,7 @@ def get_seq_data(snp_cons_file):
     lo_bases = []
     with open(snp_cons_file, 'r') as infile:
         for line in infile:
-            line = line.rstrip('''\n''')
+            line = line.rstrip('\\n')
             if not line.startswith('#'):
                 lo_bases.append(line)
     return lo_bases

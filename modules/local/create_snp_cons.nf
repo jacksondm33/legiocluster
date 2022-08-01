@@ -15,7 +15,7 @@ process CREATE_SNP_CONS {
     tuple val(meta), path(csv)     , emit: csv
     tuple val(meta), path(snp_cons), emit: snp_cons
     tuple val(meta), path(log_file), emit: log
-    path "versions.yml"            , emit: versions
+    path  "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

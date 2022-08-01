@@ -12,7 +12,7 @@ process UNZIP {
 
     output:
     tuple val(meta), path("*_unzipped", type: 'dir'), emit: unzipped_archives
-    path "versions.yml"                             , emit: versions
+    path  "versions.yml"                            , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -27,7 +27,8 @@ workflow QUAST {
     )
 
     PARSE_QUAST_OUTPUT (
-        contigs.join(QUAST_MODULE.out.report)
+        contigs.join(QUAST_MODULE.out.report),
+        params.contig_threshold
     )
 
     COUNT_NNN_GAPS (

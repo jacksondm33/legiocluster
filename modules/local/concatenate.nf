@@ -11,15 +11,17 @@ process CONCATENATE {
     tuple val(meta), path(files)
 
     output:
-    tuple val(meta), path("*_cat.fastq"), emit: cat
+    tuple val(meta), path(output), emit: cat
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_cat.fastq"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+
+    output = "${prefix}_cat.fastq"
+
     """
     cat \\
         $args \\

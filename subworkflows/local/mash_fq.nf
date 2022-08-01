@@ -25,7 +25,7 @@ workflow MASH_FQ {
     MASH_DIST_FQ (
         MASH_SKETCH_FQ.out.mash,
         mash,
-        'FAvNCBI'
+        'RvSp'
     )
 
     PARSE_MASH_OUTPUT (

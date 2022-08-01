@@ -12,15 +12,17 @@ process CREATE_REPORT {
     val sp_abbr
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
+    tuple val(meta), path(output), emit: report
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_report.txt"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+
+    output = "${prefix}_report.txt"
+
     """
     cat <<EOF > $output
     REPORT

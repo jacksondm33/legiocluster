@@ -2,10 +2,10 @@ process FILTER_CONTIGS {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
+    conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"
+        'https://depot.galaxyproject.org/singularity/multiqc:1.12--pyhdfd78af_0' :
+        'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(contigs)
@@ -13,29 +13,19 @@ process FILTER_CONTIGS {
     val min_contig_cov
 
     output:
-    tuple val(meta), path("*.fa") , emit: filtered_contigs
-    tuple val(meta), path("*.log"), emit: log
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path(filtered_contigs), emit: filtered_contigs
+    tuple val(meta), path(log_file)        , emit: log
+    path  "versions.yml"                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}.fa"
-    """
-    filter_contigs.py \\
-        --contigs-in $contigs \\
-        --contigs-out $output \\
-        --min-contig-len $min_contig_len \\
-        --min-contig-cov $min_contig_cov \\
-        $args \\
-        > ${prefix}.log
+    script:
+    prefix = task.ext.prefix ?: "${meta.id}"
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
-    """
+    log_level        = "INFO"
+    filtered_contigs = "${prefix}.fa"
+    log_file         = "${prefix}.log"
+
+    template 'filter_contigs.py'
 }

@@ -4,12 +4,13 @@
 """Count nnn gaps."""
 
 
-import argparse
 import csv
 import logging
 import matplotlib.pyplot as plt
+import platform
 import re
 import sys
+import yaml
 from numpy import mean, std, ceil
 from pathlib import Path
 
@@ -27,7 +28,7 @@ def parse_file(depth_file):
     lo_depths = []
     with open(depth_file, 'r') as in_file:
         for line in in_file:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             depth = line.split()[2]
             lo_depths.append(int(depth))
     return lo_depths
@@ -123,7 +124,7 @@ def write_report(report_file, lo_depth_stats, MIN_DEPTH, GAP_LENGTH):
 
     with open(report_file, 'a') as report:
 
-        print('\nAlignment QC (Samtools depth):', file=report)
+        print('\\nAlignment QC (Samtools depth):', file=report)
 
         print('Total number of bases: ' + str(count_all), file=report)
         print('Number (percent) of bases with read depth < '\
@@ -175,7 +176,7 @@ def write_log(MIN_DEPTH, GAP_LENGTH, INTERVAL):
     param: int INTERVAL = size of subsections of the genome, e.g. 5000 bp
     """
 
-    logger.info('\ncount_nnn_gaps.py settings:')
+    logger.info('\\ncount_nnn_gaps.py settings:')
     logger.info('minimal read depth:', MIN_DEPTH)
     logger.info('minimal gap length:', GAP_LENGTH)
     logger.info('counting interval:', INTERVAL)
@@ -314,118 +315,18 @@ def count_nnn_gaps(depth_file, histo_depths_file, plot_depths_file,
         output_writer.writerow([depth_sd])
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--depth-file",
-        metavar="DEPTH_FILE",
-        type=Path,
-        help="Input depth file",
-        required=True,
-    )
-    parser.add_argument(
-        "--histo-depths-file",
-        metavar="HISTO_DEPTHS_FILE",
-        type=Path,
-        help="Output histo depths file",
-        required=True,
-    )
-    parser.add_argument(
-        "--output-file",
-        metavar="OUTPUT_FILE",
-        type=Path,
-        help="Output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--percent-mapped",
-        metavar="PERCENT_MAPPED",
-        type=float,
-        help="Percent mapped",
-        required=True,
-    )
-    parser.add_argument(
-        "--plot-depths-file",
-        metavar="PLOT_DEPTHS_FILE",
-        type=Path,
-        help="Output plot depths file",
-        required=True,
-    )
-    parser.add_argument(
-        "--report-file",
-        metavar="REPORT_FILE",
-        type=Path,
-        help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--gap-length",
-        metavar="GAP_LENGTH",
-        type=int,
-        help="Gap length",
-        default=100,
-    )
-    parser.add_argument(
-        "--interval",
-        metavar="INTERVAL",
-        type=int,
-        help="Interval",
-        default=5000,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--mapped-threshold",
-        metavar="MAPPED_THRESHOLD",
-        type=float,
-        help="Mapped threshold",
-        default=0.0,
-    )
-    parser.add_argument(
-        "--max-no-gaps",
-        metavar="MAX_NO_GAPS",
-        type=int,
-        help="Maximum number of gaps",
-        default=999999999,
-    )
-    parser.add_argument(
-        "--max-no-ns",
-        metavar="MAX_NO_NS",
-        type=int,
-        help="Maximum number of unmapped bases",
-        default=999999999,
-    )
-    parser.add_argument(
-        "--min-depth",
-        metavar="MIN_DEPTH",
-        type=int,
-        help="Minimum depth",
-        default=1,
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.depth_file.is_file():
-        logger.error(f"The given input file {args.depth_file} was not found!")
-        sys.exit(2)
-    args.histo_depths_file.parent.mkdir(parents=True, exist_ok=True)
-    args.output_file.parent.mkdir(parents=True, exist_ok=True)
-    args.plot_depths_file.parent.mkdir(parents=True, exist_ok=True)
-    args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    count_nnn_gaps(args.depth_file, args.histo_depths_file, args.plot_depths_file,
-                   args.output_file, args.report_file, args.percent_mapped, args.min_depth,
-                   args.gap_length, args.interval, args.max_no_ns, args.max_no_gaps, args.mapped_threshold)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(count_nnn_gaps("$depth", "$histo_depths", "$plot_depths", "$output", "$report",
+                            float("$percent_mapped"), int("$min_depth"), int("$gap_length"),
+                            int("$interval"), int("$max_no_ns"), int("$max_no_gaps"),
+                            float("$mapped_threshold")))

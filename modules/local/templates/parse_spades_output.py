@@ -4,69 +4,16 @@
 """Parse spades output."""
 
 
-import argparse
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
+import platform
 import sys
+import yaml
 from pathlib import Path
 
 
 logger = logging.getLogger()
-
-
-def parse_spades_output(contigs_file, contig_len_dist_file,
-                        contig_cov_dist_file, contig_len_x_cov_dist_file,
-                        contig_ind_len_file, contig_ind_cov_file,
-                        min_contig_len, min_contig_cov, max_no_contigs,
-                        report_file):
-    """
-    Writes information from the SPAdes output file to report.txt and returns
-    info about each contig.
-    param: str contigs_file = contigs file
-    param: str report_file = report file
-    return: list lo_contig_data = [(contig number, length, coverage), ...];
-            e.g.: [(1, 238256, 41.824755), (2, 208256, 8.247), ...]
-    """
-
-    lo_contig_data = []
-
-    with open(report_file, 'a') as report:
-        print('\n\nDe novo assembly (SPAdes):', file=report)
-        print('contig\tlength (bp)\tcoverage', file=report)
-
-        with open(contigs_file, 'r') as contigs:
-            for line in contigs:
-                if line.startswith('>'):
-                    line = line.rstrip('\n')
-                    data = line.split('_')
-                    # contig number, length, coverage; e.g.:
-                    # >NODE_1_length_238256_cov_41.824755
-                    print(data[1], '\t', data[3], '\t', data[5], file=report)
-                    # collect contig info
-                    lo_contig_data.append((int(data[1]), int(data[3]),
-                                           float(data[5])))
-
-        # Write placeholders for figures to the report
-        print('\nFigure: contigs vs length', file=report)
-        print('\nFigure: contigs vs coverage', file=report)
-        print('\nFigure: contig length distribution', file=report)
-        print('\nFigure: contig coverage distribution', file=report)
-        print('\nFigure: contig length * coverage distribution', file=report)
-
-    plot_sum_dist(contig_len_dist_file, contig_cov_dist_file, lo_contig_data, min_contig_len, min_contig_cov)
-
-    contig_stats = plot_len_x_cov_dist(contig_len_x_cov_dist_file, lo_contig_data, min_contig_len, min_contig_cov)
-
-    write_to_file(report_file, contig_stats, min_contig_len, min_contig_cov)
-
-    plot_ind_dist(contig_ind_len_file, contig_ind_cov_file, lo_contig_data)
-
-    n_contigs = len(lo_contig_data)
-
-    if n_contigs > max_no_contigs:
-        logger.error(f"There were {n_contigs} contigs, which is far too many.")
-        sys.exit(2)
 
 
 def write_to_file(report_file, contig_stats, MIN_CONTIG_LEN, MIN_CONTIG_COV):
@@ -87,7 +34,7 @@ def write_to_file(report_file, contig_stats, MIN_CONTIG_LEN, MIN_CONTIG_COV):
     no_contigs = sum(contig_stats)
 
     with open(report_file, 'a') as report:
-        print('\nContig analysis:', file=report)
+        print('\\nContig analysis:', file=report)
         print('(min length: ' + str(MIN_CONTIG_LEN) + ' bp, min coverage: '
               + str(MIN_CONTIG_COV) + 'x)', file=report)
         print('contigs that fail both thresholds: ',
@@ -295,120 +242,82 @@ def plot_ind_dist(contig_ind_len_file, contig_ind_cov_file, lo_contig_data):
     plot_it_2(contig_ind_len_file, lo_len, 'maroon', contig_1k,
               'Contig length distribution (median=' \
               + str(round(np.median(lo_len), 2)) \
-              + ')\nsmallest contig >=1000 bp = ' + str(contig_1k),
+              + ')\\nsmallest contig >=1000 bp = ' + str(contig_1k),
               False, 0, 'Length [log10]')
 
     # Coverage for all contigs
     lo_cov = [datum[2] for datum in lo_contig_data]
     med_cov = np.median(lo_cov)  # median coverage
     plot_it_2(contig_ind_cov_file, lo_cov, 'seagreen', contig_1k,
-              'Contig coverage distribution\n(median='  \
+              'Contig coverage distribution\\n(median='  \
               + str(round(med_cov, 2)) + ')',
               True, med_cov, 'Coverage [log10]')
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--contig-cov-dist-file",
-        metavar="CONTIG_COV_DIST_FILE",
-        type=Path,
-        help="Contig cov dist output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--contigs-file",
-        metavar="CONTIGS_FILE",
-        type=Path,
-        help="Input contigs file",
-        required=True,
-    )
-    parser.add_argument(
-        "--contig-ind-cov-file",
-        metavar="CONTIG_IND_COV_FILE",
-        type=Path,
-        help="Contig ind cov output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--contig-ind-len-file",
-        metavar="CONTIG_IND_LEN_FILE",
-        type=Path,
-        help="Contig ind len output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--contig-len-dist-file",
-        metavar="CONTIG_LEN_DIST_FILE",
-        type=Path,
-        help="Contig len dist output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--contig-len-x-cov-dist-file",
-        metavar="CONTIG_LEN_X_COV_DIST_FILE",
-        type=Path,
-        help="Contig len x cov dist output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--report-file",
-        metavar="REPORT_FILE",
-        type=Path,
-        help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--max-no-contigs",
-        metavar="MAX_NO_CONTIGS",
-        type=int,
-        help="Maximum number of contigs",
-        default=999999999,
-    )
-    parser.add_argument(
-        "--min-contig-cov",
-        metavar="MIN_CONTIG_COV",
-        type=float,
-        help="Minimum contig coverage",
-        default=1.0,
-    )
-    parser.add_argument(
-        "--min-contig-len",
-        metavar="MIN_CONTIG_LEN",
-        type=int,
-        help="Minimum contig length",
-        default=1,
-    )
-    return parser.parse_args(argv)
+def parse_spades_output(contigs_file, contig_len_dist_file, contig_cov_dist_file,
+                        contig_len_x_cov_dist_file, contig_ind_len_file,
+                        contig_ind_cov_file, report_file, min_contig_len,
+                        min_contig_cov, max_no_contigs):
+    """
+    Writes information from the SPAdes output file to report.txt and returns
+    info about each contig.
+    param: str contigs_file = contigs file
+    param: str report_file = report file
+    return: list lo_contig_data = [(contig number, length, coverage), ...];
+            e.g.: [(1, 238256, 41.824755), (2, 208256, 8.247), ...]
+    """
 
+    lo_contig_data = []
 
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.contigs_file.is_file():
-        logger.error(f"The given input file {args.contigs_file} was not found!")
+    with open(report_file, 'a') as report:
+        print('\\n\\nDe novo assembly (SPAdes):', file=report)
+        print('contig\tlength (bp)\tcoverage', file=report)
+
+        with open(contigs_file, 'r') as contigs:
+            for line in contigs:
+                if line.startswith('>'):
+                    line = line.rstrip('\\n')
+                    data = line.split('_')
+                    # contig number, length, coverage; e.g.:
+                    # >NODE_1_length_238256_cov_41.824755
+                    print(data[1], '\t', data[3], '\t', data[5], file=report)
+                    # collect contig info
+                    lo_contig_data.append((int(data[1]), int(data[3]),
+                                           float(data[5])))
+
+        # Write placeholders for figures to the report
+        print('\\nFigure: contigs vs length', file=report)
+        print('\\nFigure: contigs vs coverage', file=report)
+        print('\\nFigure: contig length distribution', file=report)
+        print('\\nFigure: contig coverage distribution', file=report)
+        print('\\nFigure: contig length * coverage distribution', file=report)
+
+    plot_sum_dist(contig_len_dist_file, contig_cov_dist_file, lo_contig_data, min_contig_len, min_contig_cov)
+
+    contig_stats = plot_len_x_cov_dist(contig_len_x_cov_dist_file, lo_contig_data, min_contig_len, min_contig_cov)
+
+    write_to_file(report_file, contig_stats, min_contig_len, min_contig_cov)
+
+    plot_ind_dist(contig_ind_len_file, contig_ind_cov_file, lo_contig_data)
+
+    n_contigs = len(lo_contig_data)
+
+    if n_contigs > max_no_contigs:
+        logger.error(f"There were {n_contigs} contigs, which is far too many.")
         sys.exit(2)
-    args.contig_cov_dist_file.parent.mkdir(parents=True, exist_ok=True)
-    args.contig_ind_cov_file.parent.mkdir(parents=True, exist_ok=True)
-    args.contig_ind_len_file.parent.mkdir(parents=True, exist_ok=True)
-    args.contig_len_dist_file.parent.mkdir(parents=True, exist_ok=True)
-    args.contig_len_x_cov_dist_file.parent.mkdir(parents=True, exist_ok=True)
-    args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_spades_output(args.contigs_file, args.contig_len_dist_file,
-                        args.contig_cov_dist_file, args.contig_len_x_cov_dist_file,
-                        args.contig_ind_len_file, args.contig_ind_cov_file,
-                        args.min_contig_len, args.min_contig_cov,
-                        args.max_no_contigs, args.report_file)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(parse_spades_output("$contigs", "$contig_len_dist", "$contig_cov_dist", "$contig_len_x_cov_dist",
+                                 "$contig_ind_len", "$contig_ind_cov", "$report", int("$min_contig_len"),
+                                 float("$min_contig_cov"), int("$max_no_contigs")))

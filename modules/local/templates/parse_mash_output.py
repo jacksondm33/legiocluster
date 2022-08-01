@@ -4,10 +4,11 @@
 """Parse mash output."""
 
 
-import argparse
 import csv
 import logging
+import platform
 import sys
+import yaml
 from pathlib import Path
 
 
@@ -90,7 +91,7 @@ def read_distance_file(dist_file):
     lo_refs = []
     with open(dist_file, 'r') as in_file:
         for line in in_file:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             if line != '':
                 # reference, query, Mash distance, p-value, matching hashes:
                 REF, QRY, DIS, PVL, HSH = line.split()
@@ -130,9 +131,9 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
             # print reference(s) with smallest distance, then the runner-up
             for i in range(len(lo_sm_dist)):
                 if i < len(lo_sm_dist) - 1:
-                    print('\nReference with the shortest distance', file=report)
+                    print('\\nReference with the shortest distance', file=report)
                 else:
-                    print('\nRunner up', file=report)
+                    print('\\nRunner up', file=report)
                 # extract data from the Mash_result object
                 print('Strain name:\t\t', lo_sm_dist[i].get_reference(),
                       file=report)
@@ -151,7 +152,7 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
                           'or a related species.', file=report)
         # in case there is only one reference
         else:
-            print('\nReference with the shortest distance', file=report)
+            print('\\nReference with the shortest distance', file=report)
             print('Strain name:\t\t', lo_sm_dist[0].get_reference(),
                   file=report)
             print('Mash distance:\t\t', lo_sm_dist[0].get_distance(),
@@ -160,7 +161,7 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
                   file=report)
             print('Matching hashes:\t', lo_sm_dist[0].get_hashes(),
                   file=report)
-            print('\nRunner up: none', file=report)
+            print('\\nRunner up: none', file=report)
 
 
 def check_quality(ref_object, report_file):
@@ -190,12 +191,12 @@ def check_quality(ref_object, report_file):
 
     # writes results to the report file
     with open(report_file, 'a') as report:
-        print('\nMash QC results:', qc_text, file=report)
+        print('\\nMash QC results:', qc_text, file=report)
 
     return passed_qc
 
 
-def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_file):
+def parse_mash_output(dist_file, references_file, report_file, species_file, sp_abbr):
     """
     Parses a distances file and returns a list of Mash_result objects of
       those references that have the shortest distance (one or more), and the
@@ -221,7 +222,7 @@ def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_
     # Extracts data from the distances file created by 'mash dist',
     #  where each reference is a Mash_result object
     lo_refs = read_distance_file(dist_file)
-    logger.info('Mash list of references:', [mr.get_all() for mr in lo_refs])
+    logger.info('Mash list of references: %s', [mr.get_all() for mr in lo_refs])
 
     # if there is more than 1 reference
     if len(lo_refs) > 1:
@@ -259,7 +260,7 @@ def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_
         #  Mash distances
         lo_min_dist_refs = [ref.get_reference() + '.fa' for ref in \
                             lo_sm_dist[:-1]]
-        logger.info('Mash list of min distance references:', lo_min_dist_refs)
+        logger.info('Mash list of min distance references: %s', lo_min_dist_refs)
 
     # only one reference
     else:
@@ -271,20 +272,20 @@ def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_
                             lo_sm_dist]
 
     # writes results to the log and report files
-    if species_file is not None:
+    if species_file != "NO_FILE":
         do_species = read_species_file(species_file)
         write_to_file(report_file, lo_refs, lo_sm_dist,
-                      '\nContamination check (Mash):', do_species)
+                      '\\nContamination check (Mash):', do_species)
     else:
         write_to_file(report_file, lo_refs, lo_sm_dist,
-                      '\nFinding a reference strain (Mash):', None)
+                      '\\nFinding a reference strain (Mash):', None)
 
     # checks that the distance and p-value are below threshold; if not, the
     #  sample might be contaminated or the reference a poor choice
     passed_qc = check_quality(lo_sm_dist[0], report_file)
-    logger.info('Mash passed QC:', passed_qc)
+    logger.info('Mash passed QC: %s', passed_qc)
 
-    if species_file is not None:
+    if species_file != "NO_FILE":
         # the species based on the Mash data
         mash_species = lo_min_dist_refs[0][:-3]
 
@@ -322,67 +323,15 @@ def parse_mash_output(dist_file, sp_abbr, references_file, report_file, species_
     write_references_file(references_file, lo_min_dist_refs)
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dist-file",
-        metavar="DIST_FILE",
-        type=Path,
-        help="Distance file",
-        required=True,
-    )
-    parser.add_argument(
-        "--references-file",
-        metavar="REFERENCES_FILE",
-        type=Path,
-        help="Output references file",
-        required=True,
-    )
-    parser.add_argument(
-        "--report-file",
-        metavar="REPORT_FILE",
-        type=Path,
-        help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--sp-abbr",
-        metavar="SP_ABBR",
-        help="Species abbreviation",
-        required=True,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--species-file",
-        metavar="SPECIES_FILE",
-        type=Path,
-        help="Species file",
-        default=None,
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.dist_file.is_file():
-        logger.error(f"The given input file {args.dist_file} was not found!")
-        sys.exit(2)
-    if args.species_file is not None and not args.species_file.is_file():
-        logger.error(f"The given input file {args.species_file} was not found!")
-        sys.exit(2)
-    args.references_file.parent.mkdir(parents=True, exist_ok=True)
-    args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_mash_output(args.dist_file, args.sp_abbr, args.references_file, args.report_file, args.species_file)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(parse_mash_output("$dist", "$fastas", "$report", "$species", "$sp_abbr"))

@@ -189,7 +189,7 @@ def clean_up_fb_data(lo_file_content):
                 # prints data for trouble shooting in case of a failure
                 except Exception as e:
                     logger.error('An Exception has occurred in cleanup_FB.clean_up_'\
-                          + '''fb_data():\n''', str(e))
+                          + 'fb_data():\\n', str(e))
                     logger.error(row)
                     logger.error(new_row)
                     logger.error(i,s, INS_count, DEL_count)
@@ -331,7 +331,7 @@ def make_consensus(snp_cons_file, csv_file, isolate, reference, diagnostic_mode)
 
         with open(csv_file, 'r') as infile:
             for line in infile:
-                line = line.rstrip('''\n''')
+                line = line.rstrip('\\n')
                 data = line.split()
                 # ignore header
                 if data[0] == '#':

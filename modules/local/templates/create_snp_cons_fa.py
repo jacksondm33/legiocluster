@@ -31,7 +31,7 @@ def read_ref_file(reference_file):
 
     with open(reference_file, 'r') as infile:
         for line in infile:
-            line = line.rstrip('''\n''')
+            line = line.rstrip('\\n')
             # extracts the contig name and adds a new list to lo_contigs that
             # includes the new contig name and '' (default) for the sequence
             if line.startswith('>'):

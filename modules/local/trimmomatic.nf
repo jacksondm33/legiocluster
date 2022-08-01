@@ -12,10 +12,10 @@ process TRIMMOMATIC {
     path "NexteraPE-PE.fa"
 
     output:
-    tuple val(meta), path("*_paired.fastq")  , emit: trimmed_reads
-    tuple val(meta), path("*_unpaired.fastq"), emit: unpaired_reads
-    tuple val(meta), path("*.log")           , emit: log
-    path "versions.yml"                      , emit: versions
+    tuple val(meta), path("*_paired_[12].fastq")  , emit: trimmed_reads
+    tuple val(meta), path("*_unpaired_[12].fastq"), emit: unpaired_reads
+    tuple val(meta), path("*.log")                , emit: log
+    path  "versions.yml"                          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -24,7 +24,7 @@ process TRIMMOMATIC {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def trimmed = meta.single_end ? "SE" : "PE"
-    def output = "${prefix}_1_paired.fastq ${prefix}_1_unpaired.fastq ${prefix}_2_paired.fastq ${prefix}_2_unpaired.fastq"
+    def output = "${prefix}_paired_1.fastq ${prefix}_unpaired_1.fastq ${prefix}_paired_2.fastq ${prefix}_unpaired_2.fastq"
     def qual_trim = task.ext.args2 ?: ''
     """
     trimmomatic \\

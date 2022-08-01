@@ -17,7 +17,7 @@ process MAKE_MUTATIONS_MATRIX {
     tuple val(meta), path(concat_pairwise_snps), emit: concat_pairwise_snps
     tuple val(meta), path(concat_pairwise_mes) , emit: concat_pairwise_mes
     tuple val(meta), path(log_file)            , emit: log
-    path "versions.yml"                        , emit: versions
+    path  "versions.yml"                       , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

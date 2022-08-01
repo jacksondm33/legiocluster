@@ -2,10 +2,10 @@ process COUNT_NNN_GAPS {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "conda-forge::matplotlib=3.1.2" : null)
+    conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/matplotlib:3.1.2' :
-        'quay.io/biocontainers/matplotlib:3.1.2' }"
+        'https://depot.galaxyproject.org/singularity/multiqc:1.12--pyhdfd78af_0' :
+        'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(depth), val(percent_mapped), val(max_no_ns), val(max_no_gaps), val(mapped_threshold)
@@ -14,39 +14,25 @@ process COUNT_NNN_GAPS {
     val interval
 
     output:
-    tuple val(meta), path("*_histo_depths.png"), emit: histo_depths
-    tuple val(meta), path("*_plot_depths.png") , emit: plot_depths
-    tuple val(meta), path("*_report.txt")      , emit: report
-    tuple val(meta), path("*.csv")             , emit: csv
-    tuple val(meta), path("*.log")             , emit: log
-    path "versions.yml"                        , emit: versions
+    tuple val(meta), path(histo_depths), emit: histo_depths
+    tuple val(meta), path(plot_depths) , emit: plot_depths
+    tuple val(meta), path(output)      , emit: csv
+    tuple val(meta), path(report)      , emit: report
+    tuple val(meta), path(log_file)    , emit: log
+    path  "versions.yml"               , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    """
-    count_nnn_gaps.py \\
-        --depth-file $depth \\
-        --histo-depths-file ${prefix}_histo_depths.png \\
-        --plot-depths-file ${prefix}_plot_depths.png \\
-        --output-file ${prefix}.csv \\
-        --report-file ${prefix}_report.txt \\
-        --percent-mapped $percent_mapped \\
-        --min-depth $min_depth \\
-        --gap-length $gap_length \\
-        --interval $interval \\
-        --max-no-ns $max_no_ns \\
-        --max-no-gaps $max_no_gaps \\
-        --mapped-threshold $mapped_threshold \\
-        $args \\
-        > ${prefix}.log
+    script:
+    prefix = task.ext.prefix ?: "${meta.id}"
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
-    """
+    log_level    = "INFO"
+    histo_depths = "${prefix}_histo_depths.png"
+    plot_depths  = "${prefix}_plot_depths.png"
+    output       = "${prefix}.csv"
+    report       = "${prefix}_report.txt"
+    log_file     = "${prefix}.log"
+
+    template 'count_nnn_gaps.py'
 }

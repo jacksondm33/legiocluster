@@ -1,4 +1,4 @@
-process COMPARE_SNPS {
+process PARSE_TRIMMOMATIC_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,12 +8,14 @@ process COMPARE_SNPS {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    tuple val(meta), path(snp_cons), path(cluster_snp_cons)
+    tuple val(meta), path(trimlog)
+    val min_reads
 
     output:
-    tuple val(meta), path(pairwise_diffs), emit: pairwise_diffs
-    tuple val(meta), path(log_file)      , emit: log
-    path  "versions.yml"                 , emit: versions
+    tuple val(meta), path(output)  , emit: csv
+    tuple val(meta), path(report)  , emit: report
+    tuple val(meta), path(log_file), emit: log
+    path  "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,9 +23,10 @@ process COMPARE_SNPS {
     script:
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    log_level      = "INFO"
-    pairwise_diffs = "${prefix}_pairwise_diffs.csv"
-    log_file       = "${prefix}.log"
+    log_level = "INFO"
+    output    = "${prefix}.csv"
+    report    = "${prefix}_report.txt"
+    log_file  = "${prefix}.log"
 
-    template 'compare_snps.py'
+    template 'parse_trimmomatic_output.py'
 }

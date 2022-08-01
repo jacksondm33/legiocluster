@@ -1,5 +1,4 @@
 include { FASTQC as FASTQC_MODULE } from '../../modules/local/fastqc'
-include { UNZIP                   } from '../../modules/local/unzip'
 include { EXTRACT_FASTQC_RESULTS  } from '../../modules/local/extract_fastqc_results'
 include { CALCULATE_COVERAGE      } from '../../modules/local/calculate_coverage'
 
@@ -16,16 +15,17 @@ workflow FASTQC {
         proc_reads
     )
 
-    UNZIP (
-        FASTQC_MODULE.out.zip
-    )
-
     EXTRACT_FASTQC_RESULTS (
-        raw_reads.join(UNZIP.out.unzipped_archives)
+        FASTQC_MODULE.out.results.join(raw_reads)
     )
 
     CALCULATE_COVERAGE (
-        proc_reads.join(UNZIP.out.unzipped_archives),
+        proc_reads
+            .join(FASTQC_MODULE.out.results)
+            .map {
+                meta, reads, fastqc_results ->
+                [ meta, reads[1], fastqc_results[1] ]
+            },
         params.med_genome_len
     )
 
@@ -35,12 +35,11 @@ workflow FASTQC {
 
     // Collect versions
     ch_versions = ch_versions.mix(FASTQC_MODULE.out.versions)
-    ch_versions = ch_versions.mix(UNZIP.out.versions)
     ch_versions = ch_versions.mix(EXTRACT_FASTQC_RESULTS.out.versions)
     ch_versions = ch_versions.mix(CALCULATE_COVERAGE.out.versions)
 
     emit:
-    zip = FASTQC_MODULE.out.zip
+    results = FASTQC_MODULE.out.results
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

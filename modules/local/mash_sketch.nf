@@ -15,7 +15,7 @@ process MASH_SKETCH {
     output:
     tuple val(meta), path("*.msh"), emit: mash
     tuple val(meta), path("*.log"), emit: log
-    path "versions.yml"           , emit: versions
+    path  "versions.yml"          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -2,10 +2,10 @@ process PARSE_SPADES_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? "conda-forge::matplotlib=3.1.2" : null)
+    conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/matplotlib:3.1.2' :
-        'quay.io/biocontainers/matplotlib:3.1.2' }"
+        'https://depot.galaxyproject.org/singularity/multiqc:1.12--pyhdfd78af_0' :
+        'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(contigs)
@@ -14,35 +14,29 @@ process PARSE_SPADES_OUTPUT {
     val max_no_contigs
 
     output:
-    tuple val(meta), path("*_report.txt"), emit: report
-    tuple val(meta), path("*.png")       , emit: plots
-    tuple val(meta), path("*.log")       , emit: log
-    path "versions.yml"                  , emit: versions
+    tuple val(meta), path(contig_len_dist)      , emit: contig_len_dist
+    tuple val(meta), path(contig_cov_dist)      , emit: contig_cov_dist
+    tuple val(meta), path(contig_len_x_cov_dist), emit: contig_len_x_cov_dist
+    tuple val(meta), path(contig_ind_len)       , emit: contig_ind_len
+    tuple val(meta), path(contig_ind_cov)       , emit: contig_ind_cov
+    tuple val(meta), path(report)               , emit: report
+    tuple val(meta), path(log_file)             , emit: log
+    path  "versions.yml"                        , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    """
-    parse_spades_output.py \\
-        --contigs-file $contigs \\
-        --contig-len-dist-file ${prefix}_contig_len_dist.png \\
-        --contig-cov-dist-file ${prefix}_contig_cov_dist.png \\
-        --contig-len-x-cov-dist-file ${prefix}_Ampel_dist.png \\
-        --contig-ind-len-file ${prefix}_plot_contig_len.png \\
-        --contig-ind-cov-file ${prefix}_plot_contig_cov.png \\
-        --report-file ${prefix}_report.txt \\
-        --min-contig-len $min_contig_len \\
-        --min-contig-cov $min_contig_cov \\
-        --max-no-contigs $max_no_contigs \\
-        $args \\
-        > ${prefix}.log
+    script:
+    prefix = task.ext.prefix ?: "${meta.id}"
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
-    """
+    log_level             = "INFO"
+    contig_len_dist       = "${prefix}_contig_len_dist.png"
+    contig_cov_dist       = "${prefix}_contig_cov_dist.png"
+    contig_len_x_cov_dist = "${prefix}_Ampel_dist.png"
+    contig_ind_len        = "${prefix}_plot_contig_len.png"
+    contig_ind_cov        = "${prefix}_plot_contig_cov.png"
+    report                = "${prefix}_report.txt"
+    log_file              = "${prefix}.log"
+
+    template 'parse_spades_output.py'
 }

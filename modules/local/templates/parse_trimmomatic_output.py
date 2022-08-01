@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 
-"""Parse trimmomatic log."""
+"""Parse trimmomatic output."""
 
 
-import argparse
 import csv
 import logging
+import platform
 import sys
+import yaml
 from pathlib import Path
 from statistics import fmean, pstdev
 
@@ -15,10 +16,10 @@ from statistics import fmean, pstdev
 logger = logging.getLogger()
 
 
-def parse_trimmomatic_log(trimmomatic_log_file, output_file, report_file, min_reads):
+def parse_trimmomatic_output(trimlog_file, output_file, report_file, min_reads):
     """
     Extracts data from the trimmomatic log file and writes them to the report.
-    param: str trimmomatic_log_file = trimmomatic log file
+    param: str trimlog_file = trimmomatic log file
     param: str report_file = output report file
     output: data added to report file
     """
@@ -40,9 +41,9 @@ def parse_trimmomatic_log(trimmomatic_log_file, output_file, report_file, min_re
     lo_r_trim_3 = []       # lengths bases trimmed at 3' of reverse reads
 
     # extracts data from the trimmomatic log file
-    with open(trimmomatic_log_file, 'r') as log:
+    with open(trimlog_file, 'r') as log:
         for line in log:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             line_content = line.split(' ')
 
             # example for reads created by ART:
@@ -161,58 +162,15 @@ def parse_trimmomatic_log(trimmomatic_log_file, output_file, report_file, min_re
         output_writer.writerow([max_read_len])
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--output-file",
-        metavar="OUTPUT_FILE",
-        type=Path,
-        help="Output file",
-        required=True,
-    )
-    parser.add_argument(
-        "--report-file",
-        metavar="REPORT_FILE",
-        type=Path,
-        help="Output report file",
-        required=True,
-    )
-    parser.add_argument(
-        "--trimmomatic-log-file",
-        metavar="TRIMMOMATIC_LOG_FILE",
-        type=Path,
-        help="Trimmomatic log file",
-        required=True,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--min-reads",
-        metavar="MIN_READS",
-        type=int,
-        help="Minimum reads",
-        default=0,
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.trimmomatic_log_file.is_file():
-        logger.error(f"The given input file {args.trimmomatic_log_file} was not found!")
-        sys.exit(2)
-    args.output_file.parent.mkdir(parents=True, exist_ok=True)
-    args.report_file.parent.mkdir(parents=True, exist_ok=True)
-    parse_trimmomatic_log(args.trimmomatic_log_file, args.output_file, args.report_file, args.min_reads)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(parse_trimmomatic_output("$trimlog", "$output", "$report", int("$min_reads")))

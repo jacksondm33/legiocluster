@@ -14,18 +14,17 @@ process MAKE_MST {
     output:
     tuple val(meta), path(mst)     , emit: png
     tuple val(meta), path(log_file), emit: log
-    path "versions.yml"            , emit: versions
+    path  "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/legiocluster/bin/
-    def args = task.ext.args ?: ''
+    script:
     prefix = task.ext.prefix ?: "${meta.ref}"
 
-    log_level            = "INFO"
-    mst                  = "${prefix}_MST_${abr}.png"
-    log_file             = "${prefix}.log"
+    log_level = "INFO"
+    mst       = "${prefix}_MST_${abr}.png"
+    log_file  = "${prefix}.log"
 
     template 'make_mst.py'
 }

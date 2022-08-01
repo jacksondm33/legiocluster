@@ -4,10 +4,11 @@
 """Reduce reads."""
 
 
-import argparse
 import logging
+import platform
 import random
 import sys
+import yaml
 from pathlib import Path
 
 
@@ -26,7 +27,7 @@ def fq_reader(file):
     count = 0
     with open(file, 'r') as infile:
         for line in infile:
-            line = line.rstrip('\n')
+            line = line.rstrip('\\n')
             count += 1
             if count == 1:
                 header1 = line
@@ -93,8 +94,8 @@ def reduce_reads(reads_in, reads_out, random, k, start, stop):
         k = N
     if STOP > N:
         STOP = N
-    text_input = 'User input\nk = '+str(k) + '\nSTART = '+str(START) \
-    + '\nSTOP = '+str(STOP)
+    text_input = 'User input\\nk = '+str(k) + '\\nSTART = '+str(START) \
+    + '\\nSTOP = '+str(STOP)
 
     # lo_indices will be used to select reads from lo_F_reads and lo_R_reads
     # random choice of k reads
@@ -130,82 +131,20 @@ def reduce_reads(reads_in, reads_out, random, k, start, stop):
         text_final = 'Could not complete writing files.'
 
     # logging text
-    for text in ['\n\nRead reduction:', text_input, text_F_file, text_R_file,
+    for text in ['\\n\\nRead reduction:', text_input, text_F_file, text_R_file,
                  text_indices, text_final]:
         logger.info(text)
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--reads-in",
-        metavar="READS_IN",
-        nargs=2,
-        type=Path,
-        help="Input reads files",
-        required=True,
-    )
-    parser.add_argument(
-        "--reads-out",
-        metavar="READS_OUT",
-        nargs=2,
-        type=Path,
-        help="Output reads files",
-        required=True,
-    )
-    parser.add_argument(
-        "--k",
-        metavar="K",
-        type=int,
-        help="k",
-        default=0,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    parser.add_argument(
-        "--random",
-        metavar="RANDOM",
-        type=bool,
-        help="Random",
-        default=False,
-    )
-    parser.add_argument(
-        "--start",
-        metavar="START",
-        type=int,
-        help="Start",
-        default=0,
-    )
-    parser.add_argument(
-        "--stop",
-        metavar="STOP",
-        type=int,
-        help="Stop",
-        default=999999999,
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.reads_in[0].is_file():
-        logger.error(f"The given input file {args.reads_in[0]} was not found!")
-        sys.exit(2)
-    if not args.reads_in[1].is_file():
-        logger.error(f"The given input file {args.reads_in[1]} was not found!")
-        sys.exit(2)
-    args.reads_out[0].parent.mkdir(parents=True, exist_ok=True)
-    args.reads_out[1].parent.mkdir(parents=True, exist_ok=True)
-    reduce_reads(args.reads_in, args.reads_out, args.random, args.k, args.start, args.stop)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(reduce_reads("$reads".split(), "$reduced_reads".split(), "$random" == "true", int("$k"), int("$start"), int("$stop")))

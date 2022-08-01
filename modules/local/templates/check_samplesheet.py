@@ -4,10 +4,11 @@
 """Provide a command line tool to validate and transform tabular samplesheets."""
 
 
-import argparse
 import csv
 import logging
+import platform
 import sys
+import yaml
 from collections import Counter
 from pathlib import Path
 
@@ -106,7 +107,7 @@ class RowChecker:
     def _validate_fastq_format(self, filename):
         """Assert that a given filename has one of the expected FASTQ extensions."""
         assert any(filename.endswith(extension) for extension in self.VALID_FORMATS), (
-            f"The FASTQ file has an unrecognized extension: {filename}\n"
+            f"The FASTQ file has an unrecognized extension: {filename}\\n"
             f"It should be one of: {', '.join(self.VALID_FORMATS)}"
         )
 
@@ -192,7 +193,7 @@ def check_samplesheet(file_in, file_out):
     """
     required_columns = {"sample", "fastq_1", "fastq_2"}
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
-    with file_in.open(newline="") as in_handle:
+    with open(file_in, newline="") as in_handle:
         reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle))
         # Validate the existence of the expected header columns.
         if not required_columns.issubset(reader.fieldnames):
@@ -210,53 +211,22 @@ def check_samplesheet(file_in, file_out):
     header = list(reader.fieldnames)
     header.insert(1, "single_end")
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
-    with file_out.open(mode="w", newline="") as out_handle:
+    with open(file_out, mode="w", newline="") as out_handle:
         writer = csv.DictWriter(out_handle, header, delimiter=",")
         writer.writeheader()
         for row in checker.modified:
             writer.writerow(row)
 
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Validate and transform a tabular samplesheet.",
-        epilog="Example: python check_samplesheet.py samplesheet.csv samplesheet.valid.csv",
-    )
-    parser.add_argument(
-        "--file-in",
-        metavar="FILE_IN",
-        type=Path,
-        help="Tabular input samplesheet in CSV or TSV format.",
-        required=True,
-    )
-    parser.add_argument(
-        "--file-out",
-        metavar="FILE_OUT",
-        type=Path,
-        help="Transformed output samplesheet in CSV format.",
-        required=True,
-    )
-    parser.add_argument(
-        "--log-level",
-        metavar="LOG_LEVEL",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
-        help="The desired log level",
-        default="INFO",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.file_in.is_file():
-        logger.error(f"The given input file {args.file_in} was not found!")
-        sys.exit(2)
-    args.file_out.parent.mkdir(parents=True, exist_ok=True)
-    check_samplesheet(args.file_in, args.file_out)
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
+
+    versions = {}
+    versions["${task.process}"] = {
+        "python": platform.python_version(),
+        "yaml": yaml.__version__,
+    }
+    with open("versions.yml", "w") as f:
+        yaml.dump(versions, f, default_flow_style=False)
+
+    sys.exit(check_samplesheet("$samplesheet", "$samplesheet_valid"))

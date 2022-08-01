@@ -90,7 +90,7 @@ def prim_mst(graph, start):
     return MST
 
 
-def weighted_MST(lo_concat_pairwise_diffs, MST):
+def weighted_mst(lo_concat_pairwise_diffs, MST):
     """
     Add the weights to the MST. The MST is a dict of key:list items, which is
       less ideal for plotting and lacks the number of mutation events or SNPs
@@ -228,7 +228,7 @@ def finish_draw_graph(graph_object, reference, isolate, color):
     return graph_object
 
 
-def make_mst(concat_pairwise_diffs_file, mst_file, abr, reference):
+def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
     """
     main function
     param: str work_dir = isolate-specific folder name; e.g. 'WH200812_001259/'
@@ -247,9 +247,9 @@ def make_mst(concat_pairwise_diffs_file, mst_file, abr, reference):
             so_pairwise_diffs.add((G1, G2, int(V1), int(V2), int(V3), int(V4)))
             so_pairwise_diffs.add((G2, G1, int(V1), int(V2), int(V3), int(V4)))
 
-    # if G1 and G2 have zero variants, they will be listed as 'G1\nG2' in the
-    #   MST: will need to replace 'G2' with 'G1\nG2', e.g.:
-    #   [['G1\nG2', 'G3', 4, 0], ['G3', 'G1\nG2', 4, 0]]
+    # if G1 and G2 have zero variants, they will be listed as 'G1\\nG2' in the
+    #   MST: will need to replace 'G2' with 'G1\\nG2', e.g.:
+    #   [['G1\\nG2', 'G3', 4, 0], ['G3', 'G1\\nG2', 4, 0]]
     for innerlist in lo_concat_pairwise_diffs:
         for element in innerlist:
             if type(element) == str and isolate in element:
@@ -264,7 +264,7 @@ def make_mst(concat_pairwise_diffs_file, mst_file, abr, reference):
     logger.info('## prim_mst() completed')
 
     # converts the MST dict back into a list of tuples
-    lo_weighted_MST = weighted_MST(lo_concat_pairwise_diffs, MST)
+    lo_weighted_MST = weighted_mst(lo_concat_pairwise_diffs, MST)
     logger.info('## write_to_log() completed')
 
     # sets the background color for the nodes in the graph drawing, will be
@@ -290,7 +290,7 @@ def make_mst(concat_pairwise_diffs_file, mst_file, abr, reference):
 
     # write note to report file
     with open(report_file, 'a') as report_file:
-        print('\nFigure: Minimum Spanning tree (' + abr + ')\n', file=report_file)
+        print('\\nFigure: Minimum Spanning tree (' + abr + ')\\n', file=report_file)
 
     logger.info('## Added a Minimum Spanning Tree (' + abr + ').')
 
@@ -306,4 +306,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$abr", "$meta.ref"))
+    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$report", "$abr", "$meta.ref"))

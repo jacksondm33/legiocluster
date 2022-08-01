@@ -11,10 +11,11 @@ process FASTQC {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("*.html"), emit: html
-    tuple val(meta), path("*.zip") , emit: zip
-    tuple val(meta), path("*.log") , emit: log
-    path  "versions.yml"           , emit: versions
+    tuple val(meta), path("*_fastqc", type: 'dir')                   , emit: results
+    tuple val(meta), path("*_fastqc/Images/per_base_quality.png")    , emit: per_base_quality
+    tuple val(meta), path("*_fastqc/Images/per_sequence_quality.png"), emit: per_sequence_quality
+    tuple val(meta), path("*.log")                                   , emit: log
+    path  "versions.yml"                                             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

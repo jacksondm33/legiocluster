@@ -1,7 +1,7 @@
 include { GUNZIP                            } from '../../modules/local/gunzip'
 include { REMOVE_POLY_GS                    } from '../../modules/local/remove_poly_gs'
 include { TRIMMOMATIC as TRIMMOMATIC_MODULE } from '../../modules/local/trimmomatic'
-include { PARSE_TRIMMOMATIC_LOG             } from '../../modules/local/parse_trimmomatic_log'
+include { PARSE_TRIMMOMATIC_OUTPUT          } from '../../modules/local/parse_trimmomatic_output'
 include { REDUCE_READS                      } from '../../modules/local/reduce_reads'
 
 workflow TRIMMOMATIC {
@@ -17,7 +17,8 @@ workflow TRIMMOMATIC {
     )
 
     REMOVE_POLY_GS (
-        GUNZIP.out.unzipped_reads
+        GUNZIP.out.unzipped_reads,
+        params.xg
     )
 
     TRIMMOMATIC_MODULE (
@@ -25,12 +26,12 @@ workflow TRIMMOMATIC {
         Channel.fromPath(params.illuminaclip).first()
     )
 
-    PARSE_TRIMMOMATIC_LOG (
+    PARSE_TRIMMOMATIC_OUTPUT (
         TRIMMOMATIC_MODULE.out.log,
         params.min_reads
     )
 
-    PARSE_TRIMMOMATIC_LOG.out.csv
+    PARSE_TRIMMOMATIC_OUTPUT.out.csv
         .map {
             meta, csv ->
             [ meta ] + csv.splitCsv().collect()
@@ -69,13 +70,13 @@ workflow TRIMMOMATIC {
         .set { ch_skipped_reads }
 
     // Collect reports
-    ch_reports = ch_reports.concat(PARSE_TRIMMOMATIC_LOG.out.report)
+    ch_reports = ch_reports.concat(PARSE_TRIMMOMATIC_OUTPUT.out.report)
 
     // Collect versions
     ch_versions = ch_versions.mix(GUNZIP.out.versions)
     ch_versions = ch_versions.mix(REMOVE_POLY_GS.out.versions)
     ch_versions = ch_versions.mix(TRIMMOMATIC_MODULE.out.versions)
-    ch_versions = ch_versions.mix(PARSE_TRIMMOMATIC_LOG.out.versions)
+    ch_versions = ch_versions.mix(PARSE_TRIMMOMATIC_OUTPUT.out.versions)
     ch_versions = ch_versions.mix(REDUCE_READS.out.versions)
 
     emit:
