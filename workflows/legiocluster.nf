@@ -92,28 +92,11 @@ workflow LEGIOCLUSTER {
         .map { [ [:], it ] }
         .set { ch_species_fastas }
 
-    // Create strain fasta channel [ meta(ref), fasta ]
-    Channel.fromPath(params.strain_refs)
-        .map {
-            fasta ->
-            [ [ref: fasta.baseName], fasta ]
-        }
-        .set { ch_strain_fasta }
-
     // Mash sketch (species)
     MASH_SKETCH_SPECIES (
         ch_species_fastas,
         false,
         true
-    )
-
-    // Mash sketch (strains)
-    MASH_SKETCH_STRAINS (
-        ch_strain_fasta
-            .collect { it[1] }
-            .map { [ [:], it ] },
-        false,
-        false
     )
 
     // Run mash fq
@@ -128,10 +111,29 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.max_read_len
     )
 
+    // TODO: Do quality tests beforehand?
+    // TODO: Use 'reduce' for COMPARE_SNPS as well
+
+    // Create strain fasta channel [ meta(ref), fasta ]
+    SPADES.out.filtered_contigs
+        .reduce([]) {
+            accum_contigs, meta, contigs ->
+            [ meta, accum_contigs ];
+            return accum_contigs + [ contigs ]
+        }
+        .set { ch_strain_fasta }
+
+    // Mash sketch (strains)
+    MASH_SKETCH_STRAINS (
+        ch_strain_fasta,
+        false,
+        false
+    )
+
     // Run mash fa
     MASH_FA (
         SPADES.out.filtered_contigs,
-        MASH_SKETCH_STRAINS.out.mash.map { it[1] }
+        MASH_SKETCH_STRAINS.out.mash // TODO: This has an id now
     )
 
     // Create bwa reads, fasta channel [ meta(id, ref), reads, fasta ]
@@ -148,7 +150,7 @@ workflow LEGIOCLUSTER {
             meta, reads, fasta ->
             [ meta + [ref: file(fasta).baseName], reads ]
         }
-        .cross(ch_strain_fasta) { it[0].ref }
+        .cross(ch_strain_fasta) { it[0].ref } // TODO: Use spades filtered_contigs
         .map { it[0] + [ it[1][1] ] }
         .set { ch_bwa_reads_fasta }
 
