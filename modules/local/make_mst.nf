@@ -13,6 +13,7 @@ process MAKE_MST {
 
     output:
     tuple val(meta), path(mst)     , emit: png
+    tuple val(meta), path(report)  , emit: report
     tuple val(meta), path(log_file), emit: log
     path  "versions.yml"           , emit: versions
 
@@ -24,6 +25,7 @@ process MAKE_MST {
 
     log_level = "INFO"
     mst       = "${prefix}_MST_${abr}.png"
+    report    = "${prefix}_report.txt"
     log_file  = "${prefix}.log"
 
     template 'make_mst.py'

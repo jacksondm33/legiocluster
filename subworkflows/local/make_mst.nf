@@ -1,4 +1,6 @@
-include { MAKE_MUTATIONS_MATRIX } from '../../modules/local/make_mutations_matrix'
+include { MAKE_MUTATIONS_MATRIX     } from '../../modules/local/make_mutations_matrix'
+include { MAKE_MST as MAKE_MST_MES  } from '../../modules/local/make_mst'
+include { MAKE_MST as MAKE_MST_SNPS } from '../../modules/local/make_mst'
 
 workflow MAKE_MST {
     take:
@@ -12,8 +14,15 @@ workflow MAKE_MST {
         cluster_pairwise_diffs
     )
 
-    // MAKE_MST_MODULE (
-    // )
+    MAKE_MST_MES (
+        MAKE_MUTATIONS_MATRIX.out.concat_pairwise_mes,
+        'ME'
+    )
+
+    MAKE_MST_SNPS (
+        MAKE_MUTATIONS_MATRIX.out.concat_pairwise_snps,
+        'SNP'
+    )
 
     emit:
     reports = ch_reports

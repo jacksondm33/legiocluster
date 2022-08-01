@@ -178,7 +178,7 @@ def concat_identicals(lo_pairwise_diffs, lo_comb_ident, USE_SNPs):
 
     # converts the list of isolate names into a string of concatenated names,
     #  separated by a newline
-    lo_str_ident = [','.join(sorted(ident)) for ident in lo_comb_ident]
+    lo_str_ident = ['\\n'.join(sorted(ident)) for ident in lo_comb_ident]
 
     lo_comb = []
 
