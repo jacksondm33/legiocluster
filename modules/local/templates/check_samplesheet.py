@@ -36,7 +36,6 @@ class RowChecker:
         sample_col="sample",
         first_col="fastq_1",
         second_col="fastq_2",
-        single_col="single_end",
         **kwargs,
     ):
         """
@@ -58,7 +57,6 @@ class RowChecker:
         self._sample_col = sample_col
         self._first_col = first_col
         self._second_col = second_col
-        self._single_col = single_col
         self._seen = set()
         self.modified = []
 
@@ -72,10 +70,8 @@ class RowChecker:
 
         """
         self._validate_sample(row)
-        self._validate_first(row)
-        self._validate_second(row)
-        self._validate_pair(row)
-        self._seen.add((row[self._sample_col], row[self._first_col]))
+        self._validate_fastqs(row)
+        self._seen.add(row[self._sample_col])
         self.modified.append(row)
 
     def _validate_sample(self, row):
@@ -84,25 +80,21 @@ class RowChecker:
         # Sanitize samples slightly.
         row[self._sample_col] = row[self._sample_col].replace(" ", "_")
 
-    def _validate_first(self, row):
-        """Assert that the first FASTQ entry is non-empty and has the right format."""
-        assert len(row[self._first_col]) > 0, "At least the first FASTQ file is required."
-        self._validate_fastq_format(row[self._first_col])
-
-    def _validate_second(self, row):
-        """Assert that the second FASTQ entry has the right format if it exists."""
-        if len(row[self._second_col]) > 0:
+    def _validate_fastqs(self, row):
+        """Assert that the FASTQ entries are either both empty or both non-empty and have the right format."""
+        if len(row[self._first_col]) > 0:
+            assert len(row[self._second_col]) > 0, "FASTQ files must either be both empty or both non-empty"
+            self._validate_fastq_format(row[self._first_col])
             self._validate_fastq_format(row[self._second_col])
+            self._validate_pair(row)
+        else:
+            assert len(row[self._second_col]) == 0, "FASTQ files must either be both empty or both non-empty"
 
     def _validate_pair(self, row):
         """Assert that read pairs have the same file extension. Report pair status."""
-        if row[self._first_col] and row[self._second_col]:
-            row[self._single_col] = False
-            assert (
-                Path(row[self._first_col]).suffixes[-2:] == Path(row[self._second_col]).suffixes[-2:]
-            ), "FASTQ pairs must have the same file extensions."
-        else:
-            row[self._single_col] = True
+        assert (
+            Path(row[self._first_col]).suffixes[-2:] == Path(row[self._second_col]).suffixes[-2:]
+        ), "FASTQ pairs must have the same file extensions."
 
     def _validate_fastq_format(self, filename):
         """Assert that a given filename has one of the expected FASTQ extensions."""
@@ -113,56 +105,9 @@ class RowChecker:
 
     def validate_unique_samples(self):
         """
-        Assert that the combination of sample name and FASTQ filename is unique.
-
-        In addition to the validation, also rename the sample if more than one sample,
-        FASTQ file combination exists.
-
+        Assert that the sample name is unique.
         """
-        assert len(self._seen) == len(self.modified), "The pair of sample name and FASTQ must be unique."
-        if len({pair[0] for pair in self._seen}) < len(self._seen):
-            counts = Counter(pair[0] for pair in self._seen)
-            seen = Counter()
-            for row in self.modified:
-                sample = row[self._sample_col]
-                seen[sample] += 1
-                if counts[sample] > 1:
-                    row[self._sample_col] = f"{sample}_T{seen[sample]}"
-
-
-def read_head(handle, num_lines=10):
-    """Read the specified number of lines from the current position in the file."""
-    lines = []
-    for idx, line in enumerate(handle):
-        if idx == num_lines:
-            break
-        lines.append(line)
-    return "".join(lines)
-
-
-def sniff_format(handle):
-    """
-    Detect the tabular format.
-
-    Args:
-        handle (text file): A handle to a `text file`_ object. The read position is
-        expected to be at the beginning (index 0).
-
-    Returns:
-        csv.Dialect: The detected tabular format.
-
-    .. _text file:
-        https://docs.python.org/3/glossary.html#term-text-file
-
-    """
-    peek = read_head(handle)
-    handle.seek(0)
-    sniffer = csv.Sniffer()
-    if not sniffer.has_header(peek):
-        logger.critical(f"The given sample sheet does not appear to contain a header.")
-        sys.exit(1)
-    dialect = sniffer.sniff(peek)
-    return dialect
+        assert len(self._seen) == len(self.modified), "The sample name must be unique."
 
 
 def check_samplesheet(file_in, file_out):
@@ -194,7 +139,7 @@ def check_samplesheet(file_in, file_out):
     required_columns = {"sample", "fastq_1", "fastq_2"}
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with open(file_in, newline="") as in_handle:
-        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle))
+        reader = csv.DictReader(in_handle)
         # Validate the existence of the expected header columns.
         if not required_columns.issubset(reader.fieldnames):
             logger.critical(f"The sample sheet **must** contain the column headers: {', '.join(required_columns)}.")
@@ -209,7 +154,6 @@ def check_samplesheet(file_in, file_out):
                 sys.exit(1)
         checker.validate_unique_samples()
     header = list(reader.fieldnames)
-    header.insert(1, "single_end")
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with open(file_out, mode="w", newline="") as out_handle:
         writer = csv.DictWriter(out_handle, header, delimiter=",")
