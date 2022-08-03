@@ -17,6 +17,10 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 ch_input = file(params.input)
 ch_references = file(params.references)
 
+// Create genomes channel
+ch_genomes = Channel.value(WorkflowLegiocluster.genomesFastaList(params))
+    .map { it.collect { file(it, checkIfExists: true) } }
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     CONFIG FILES
@@ -33,14 +37,13 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 // Modules
-include { MASH_SKETCH as MASH_SKETCH_SPECIES } from '../modules/local/mash_sketch'
-include { MASH_SKETCH as MASH_SKETCH_STRAINS } from '../modules/local/mash_sketch'
-include { CREATE_SNP_CONS_FA                 } from '../modules/local/create_snp_cons_fa'
-include { CREATE_SNP_CONS                    } from '../modules/local/create_snp_cons'
-include { COMPARE_SNPS                       } from '../modules/local/compare_snps'
-include { CREATE_REPORT                      } from '../modules/local/create_report'
-include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/local/custom_dumpsoftwareversions'
-include { MULTIQC                            } from '../modules/local/multiqc'
+include { MASH_SKETCH                 } from '../modules/local/mash_sketch'
+include { CREATE_SNP_CONS_FA          } from '../modules/local/create_snp_cons_fa'
+include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
+include { COMPARE_SNPS                } from '../modules/local/compare_snps'
+include { CREATE_REPORT               } from '../modules/local/create_report'
+include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/local/custom_dumpsoftwareversions'
+include { MULTIQC                     } from '../modules/local/multiqc'
 
 // Subworkflows
 include { CHECK_INPUT } from '../subworkflows/local/check_input'
@@ -74,7 +77,8 @@ workflow LEGIOCLUSTER {
 
     // Check input
     CHECK_INPUT (
-        ch_input
+        ch_input,
+        ch_references
     )
 
     // Run trimmomatic
@@ -88,15 +92,9 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.reads
     )
 
-    // Create species fastas channel [ meta(), [ fastas ] ]
-    Channel.fromPath(params.species_refs)
-        .collect()
-        .map { [ [:], it ] }
-        .set { ch_species_fastas }
-
-    // Mash sketch (species)
-    MASH_SKETCH_SPECIES (
-        ch_species_fastas,
+    // Mash sketch
+    MASH_SKETCH (
+        ch_genomes.map { [ [:], it ] },
         false,
         true
     )
@@ -104,7 +102,7 @@ workflow LEGIOCLUSTER {
     // Run mash fq
     MASH_FQ (
         TRIMMOMATIC.out.reads,
-        MASH_SKETCH_SPECIES.out.mash.map { it[1] }
+        MASH_SKETCH.out.mash.map { it[1] }
     )
 
     // Run spades
@@ -113,41 +111,84 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.max_read_len
     )
 
-    SPADES.out.filtered_contigs
-        .branch {
-            meta, filtered_contigs ->
-            make_ref: meta.make_ref
-            set_ref: meta.set_ref != ''
-            get_ref: true
-        }
-        .set { ch_spades_out }
-
-    // Channel.fromPath(params.strain_refs)
-    //     .map { [ [ref: it.baseName], it ] }
-    //     .set { ch_strain_refs }
-
-    ch_spades_out.make_ref
+    // Hack to make nextflow recursion work
+    TRIMMOMATIC.out.reads
+        .combine(
+            CHECK_INPUT.out.fasta
+                .collect { it[1] }
+                .map { [ it ] }
+        )
         .map {
-            meta, reads, contigs, filtered_contigs ->
-            filtered_contigs
+            meta, reads, fastas ->
+            [ meta, fastas ]
         }
-        .mix(Channel.fromPath(params.strain_refs))
-        .collect()
-        .set { ch_refs }
-
-    ch_spades_out.get_ref
-        .multiMap {
-            meta, reads, contigs, filtered_contigs ->
-            reads: [ meta, reads ]
-            contigs: [ meta, contigs ]
-            filtered_contigs: [ meta, filtered_contigs ]
-        }
-        .set { ch_main }
+        .set { ch_fastas }
 
     LEGIOCLUSTER_MAIN
-        .scan(ch_main.reads, ch_main.contigs, ch_main.filtered_contigs, ch_refs, Channel.empty(), Channel.empty())
+        .scan(TRIMMOMATIC.out.reads, SPADES.out.contigs, SPADES.out.filtered_contigs, CHECK_INPUT.out.fasta, Channel.empty(), Channel.empty())
 
-    LEGIOCLUSTER_MAIN.out.fastas.dump(tag: 'final')
+    // Create SNP consensus (fasta)
+    CREATE_SNP_CONS_FA (
+        ch_freebayes_close.fasta
+            .map {
+                meta, fasta ->
+                [ [ref: meta.ref], fasta ]
+            }
+            .unique()
+    )
+
+    // Create SNP consensus input channel
+    ch_freebayes_close.mpileup
+        .join(ch_freebayes_close.freebayes)
+        .cross(
+            CREATE_SNP_CONS_FA.out.bases
+        ) { it[0].ref }
+        .map { it[0] + it[1][1..-1] }
+        .set { ch_create_snp_cons_in }
+
+    // Create SNP consensus
+    CREATE_SNP_CONS (
+        ch_create_snp_cons_in,
+        false
+    )
+
+    // Compare SNPs input channel
+    CREATE_SNP_CONS_FA.out.snp_cons
+        .cross(
+            CREATE_SNP_CONS.out.snp_cons
+        ) { it[0].ref }
+        .groupTuple()
+        .map { [ it[1], it[1].collect { it[1] } + [ it[0][1] ] ] }
+        .transpose(by: 0)
+        .map { it[0] + [ it[1] - [ it[0][1] ] ] }
+        .set { ch_compare_snps_in }
+
+    COMPARE_SNPS (
+        ch_compare_snps_in
+    )
+
+    COMPARE_SNPS.out.pairwise_diffs
+        .map {
+            meta, pairwise_diffs ->
+            [ [ref: meta.ref], pairwise_diffs ]
+        }
+        .groupTuple()
+        .set { ch_make_mst_in }
+
+    MAKE_MST (
+        ch_make_mst_in
+    )
+
+    // CREATE_REPORT (
+    //     ch_reports
+    //         .map {
+    //             meta, report ->
+    //             [ meta - [ref: meta.ref], report ]
+    //         }
+    //         .groupTuple()
+    //         .join(CHECK_INPUT.out.reads),
+    //     params.genome
+    // )
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')

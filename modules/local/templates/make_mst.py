@@ -124,17 +124,16 @@ def weighted_mst(lo_concat_pairwise_diffs, MST):
     return lo_weighted_MST
 
 
-def get_ref_colors(sp_abbr, reference):
+def get_ref_colors(genome, reference):
     """
     Returns a color for the MST if the reference's name is in the list,
       else white.
-    param: str sp_abbr = three letter species abbreviation, e.g.: 'Lpn'
     param: str ref = name of a reference strain
     """
 
     color = 'white'
 
-    if sp_abbr == 'Lpn':
+    if genome == 'Lpn':
         do_ref_col = {
             'ATCC_43290':'aliceblue',
             'Corby':'bisque',
@@ -231,8 +230,6 @@ def finish_draw_graph(graph_object, reference, isolate, color):
 def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
     """
     main function
-    param: str work_dir = isolate-specific folder name; e.g. 'WH200812_001259/'
-    param: str sp_abbr = three letter species abbreviation, e.g.: 'Lpn'
     param: str isolate = name of the bacterial isolate, user supplied
     param: str ref_fa_file = name of a reference strain's FASTA file
     param: list lo_concat_pairwise_diffs = differences (mutation events or
@@ -269,7 +266,7 @@ def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
 
     # sets the background color for the nodes in the graph drawing, will be
     # 'white' if reference is not in the reference:color dict
-    color = get_ref_colors(sp_abbr, reference)
+    color = get_ref_colors(genome, reference)
 
     # generate a graph_object for drawing, start with the reference strain as
     #  first node

@@ -48,11 +48,21 @@ class WorkflowLegiocluster {
         return yaml_file_text
     }
 
+    public static List genomesFastaList(params) {
+        List genome_fastas = []
+        for (genome in params.genomes.keySet()) {
+            if (params.genomes.get(genome).containsKey('fasta')) {
+                genome_fastas.add(params.genomes.get(genome).fasta)
+            }
+        }
+        return genome_fastas
+    }
+
     //
     // Exit pipeline if incorrect --genome key provided
     //
     private static void genomeExistsError(params, log) {
-        if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+        if (!params.genomes.containsKey(params.genome)) {
             log.error "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
                 "  Genome '${params.genome}' not found in any config files provided to the pipeline.\n" +
                 "  Currently, the available genome keys are:\n" +

@@ -196,7 +196,7 @@ def check_quality(ref_object, report_file):
     return passed_qc
 
 
-def parse_mash_output(dist_file, references_file, report_file, species_file, sp_abbr):
+def parse_mash_output(dist_file, references_file, report_file, species_file, genome):
     """
     Parses a distances file and returns a list of Mash_result objects of
       those references that have the shortest distance (one or more), and the
@@ -208,7 +208,6 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, sp_
       found that is outside the reasonable range of the smallest distance;
       this reference will also be printed to file for comparison.
     param: str dist_file = name of TAB file produced by mash dist
-    param: str sp_abbr = species abbreviation
     param: str report_file = output report file
     param: str species_file = input species file
     output: writes reference_ID, Mash_distance, P_value, Matching_hashes to
@@ -258,8 +257,7 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, sp_
 
         # makes a list of those reference fasta files that have the smallest
         #  Mash distances
-        lo_min_dist_refs = [ref.get_reference() + '.fa' for ref in \
-                            lo_sm_dist[:-1]]
+        lo_min_dist_refs = [ref.get_reference() for ref in lo_sm_dist[:-1]]
         logger.info('Mash list of min distance references: %s', lo_min_dist_refs)
 
     # only one reference
@@ -268,8 +266,7 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, sp_
 
         # makes a list of those reference fasta files that have the smallest
         #  Mash distances
-        lo_min_dist_refs = [ref.get_reference() + '.fa' for ref in \
-                            lo_sm_dist]
+        lo_min_dist_refs = [ref.get_reference() for ref in lo_sm_dist]
 
     # writes results to the log and report files
     if species_file != "NO_FILE":
@@ -293,18 +290,18 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, sp_
         # sometimes the lab only provides the info that an isolate belongs to a
         #  "complex" without giving the exact species, the code below allows for
         #  this kind of uncertainty when doing the species check with Mash
-        if sp_abbr == 'Spy' and mash_species == 'Sdy':
+        if genome == 'Spy' and mash_species == 'Sdy':
             mash_species = 'Spy'
             passed_qc = True
-        elif sp_abbr == 'Cro' and mash_species in ['Cco','Cdu','Cma','Cmu',
+        elif genome == 'Cro' and mash_species in ['Cco','Cdu','Cma','Cmu',
                                                 'Csa','Ctu','Cun']:
             mash_species = 'Cro'
             passed_qc = True
-        elif sp_abbr == 'Ecl' and mash_species in ['Eas','Eca','Ecl','Ehh',
+        elif genome == 'Ecl' and mash_species in ['Eas','Eca','Ecl','Ehh',
                                                 'Eho','Eko','Elu','Ero']:
             mash_species = 'Ecl'
             passed_qc = True
-        elif sp_abbr == 'Cbo':
+        elif genome == 'Cbo':
             mash_species = 'Cbo'
             passed_qc = True
 
@@ -312,7 +309,7 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, sp_
             logger.error("The reads did not pass the Mash QC check.")
             sys.exit(2)
 
-        if mash_species != sp_abbr:
+        if mash_species != genome:
             logger.error("The reads did not pass the Mash species check.")
             sys.exit(2)
     else:
@@ -334,4 +331,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(parse_mash_output("$dist", "$fastas", "$report", "$species", "$sp_abbr"))
+    sys.exit(parse_mash_output("$dist", "$fastas", "$report", "$species", "$genome"))

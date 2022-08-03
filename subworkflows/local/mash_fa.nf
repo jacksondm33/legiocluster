@@ -27,7 +27,7 @@ workflow MASH_FA {
     PARSE_MASH_OUTPUT (
         MASH_DIST_FA.out.dist,
         Channel.fromPath('NO_FILE').first(),
-        params.sp_abbr
+        params.genome
     )
 
     // Collect reports

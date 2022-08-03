@@ -9,7 +9,7 @@ process CREATE_REPORT {
 
     input:
     tuple val(meta), path("report_???.txt"), path(reads)
-    val sp_abbr
+    val genome
 
     output:
     tuple val(meta), path(output), emit: report
@@ -31,7 +31,7 @@ process CREATE_REPORT {
     Date submitted:\t\t${workflow.start.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)}
     Submitted by:\t\t${workflow.userName}
     Isolate name:\t\t${meta.id}
-    Species:\t\t${sp_abbr}
+    Species:\t\t${genome}
     Forward reads:\t\t${reads[0]}
     Reverse reads:\t\t${reads[1]}
     Metadata:\t\t

@@ -1,6 +1,6 @@
-process PARSE_MASH_OUTPUT {
+process CHECK_REF_QUAL {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_low'
 
     conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -8,12 +8,11 @@ process PARSE_MASH_OUTPUT {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    tuple val(meta), path(dist)
-    path species
-    val genome
+    tuple val(meta), path(contigs)
+    val med_genome_len
 
     output:
-    tuple val(meta), path(fastas)  , emit: fastas
+    tuple val(meta), path(output)  , emit: csv
     tuple val(meta), path(report)  , emit: report
     tuple val(meta), path(log_file), emit: log
     path  "versions.yml"           , emit: versions
@@ -25,9 +24,9 @@ process PARSE_MASH_OUTPUT {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    fastas    = "${prefix}_fastas.csv"
+    output    = "${prefix}.csv"
     report    = "${prefix}_report.txt"
     log_file  = "${prefix}.log"
 
-    template 'parse_mash_output.py'
+    template 'check_ref_qual.py'
 }

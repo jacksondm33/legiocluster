@@ -1,5 +1,5 @@
-process CHECK_SAMPLESHEET {
-    tag "$samplesheet"
+process CHECK_INPUT {
+    tag "$input"
 
     conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -7,18 +7,19 @@ process CHECK_SAMPLESHEET {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    path samplesheet
+    path input
+    val references
 
     output:
-    path samplesheet_valid, emit: csv
-    path "versions.yml"   , emit: versions
+    path input_valid   , emit: csv
+    path "versions.yml", emit: versions
 
     script:
-    prefix = task.ext.prefix ?: "samplesheet"
+    prefix = task.ext.prefix ?: references ? "references" : "samples"
 
     log_level         = "INFO"
-    samplesheet_valid = "${prefix}_valid.csv"
+    input_valid       = "${prefix}_valid.csv"
     log_file          = "${prefix}.log"
 
-    template 'check_samplesheet.py'
+    template 'check_input.py'
 }

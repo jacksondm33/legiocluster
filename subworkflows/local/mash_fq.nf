@@ -31,15 +31,15 @@ workflow MASH_FQ {
     PARSE_MASH_OUTPUT (
         MASH_DIST_FQ.out.dist,
         Channel.of(
-            params.species
+            params.genomes
                 .collect {
-                    sp_abbr, info ->
-                    sp_abbr + ',' + info[0]
+                    genome, info ->
+                    genome + ',' + info.binomial
                 })
             .flatten()
             .collectFile(name: "species.csv", newLine: true, sort: true)
             .first(),
-        params.sp_abbr
+        params.genome
     )
 
     // Collect reports
