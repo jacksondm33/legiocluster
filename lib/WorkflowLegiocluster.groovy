@@ -10,8 +10,13 @@ class WorkflowLegiocluster {
     public static void initialise(params, log) {
         genomeExistsError(params, log)
 
-        if (!params.fasta) {
-            log.error "Genome fasta file not specified with e.g. '--fasta genome.fa' or via a detectable config file."
+        if (!params.input) {
+            log.error "Input samplesheet not specified!"
+            System.exit(1)
+        }
+
+        if (!params.references) {
+            log.error "References file not specified!"
             System.exit(1)
         }
     }
