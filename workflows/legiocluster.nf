@@ -111,8 +111,14 @@ workflow LEGIOCLUSTER {
         TRIMMOMATIC.out.max_read_len
     )
 
-    // TODO: Do quality tests beforehand?
-    // TODO: Use 'reduce' for COMPARE_SNPS as well
+    // TODO:
+    // Split samples into three channels:
+    // ch_make_ref, ch_set_ref, ch_get_ref
+    // Run ch_set_ref in parallel on set reference
+    // Get closest references for ch_make_ref and ch_get_ref on all references and again on all references and samples
+    // Run BWA on the union of these sets
+    // Run post-BWA for all references that have at least the percent mapped of a known reference
+    // Determine clusters?
 
     // Create strain fasta channel [ meta(ref), fasta ]
     SPADES.out.filtered_contigs
