@@ -8,8 +8,7 @@ process MASH_DIST {
         'staphb/mash:2.1' }"
 
     input:
-    tuple val(meta), path(query)
-    path reference
+    tuple val(meta), path(query), path(reference)
     val suffix
 
     output:

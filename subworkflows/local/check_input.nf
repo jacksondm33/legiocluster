@@ -21,7 +21,7 @@ workflow CHECK_INPUT {
     CHECK_SAMPLES.out.csv
         .splitCsv(header: true, sep: ',')
         .map { create_reads_channel(it) }
-        .set { reads }
+        .set { ch_reads }
 
     CHECK_REFERENCES (
         references,
@@ -30,17 +30,47 @@ workflow CHECK_INPUT {
 
     CHECK_REFERENCES.out.csv
         .splitCsv(header: true, sep: ',')
-        .map { create_fasta_channel(it) }
-        .set { fasta }
+        .branch {
+            reference: it.reference == it.cluster
+            cluster: true
+        }
+        .set { ch_reference }
+
+    ch_reference.reference
+        .map { create_reference_channel(it) }
+        .multiMap {
+            meta, fasta, bwa, fai, snp_cons, mutations_matrix ->
+            fasta:            [ meta, fasta            ]
+            bwa:              [ meta, bwa              ]
+            fai:              [ meta, fai              ]
+            snp_cons:         [ meta, snp_cons         ]
+            mutations_matrix: [ meta, mutations_matrix ]
+        }
+        .set { ch_output }
+
+    ch_reference.cluster
+        .map { create_cluster_channel(it) }
+        .multiMap {
+            meta, fasta, snp_cons ->
+            fasta:    [ meta, fasta    ]
+            snp_cons: [ meta, snp_cons ]
+        }
+        .set { ch_cluster_output }
 
     // Collect versions
     ch_versions = ch_versions.mix(CHECK_SAMPLES.out.versions)
     ch_versions = ch_versions.mix(CHECK_REFERENCES.out.versions)
 
     emit:
-    reads                  // channel: [ val(meta), [ reads ] ]
-    fasta                  // channel: [ val(meta), [ fasta ] ]
-    versions = ch_versions // channel: [ versions.yml ]
+    reads            = ch_reads
+    fasta            = ch_output.fasta
+    bwa              = ch_output.bwa
+    fai              = ch_output.fai
+    snp_cons         = ch_output.snp_cons
+    mutations_matrix = ch_output.mutations_matrix
+    cluster_fasta    = ch_cluster_output.fasta
+    cluster_snp_cons = ch_cluster_output.snp_cons
+    versions         = ch_versions                // channel: [ versions.yml ]
 }
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
@@ -61,13 +91,29 @@ def create_reads_channel(LinkedHashMap row) {
 }
 
 // Function to get list of [ meta, fasta ]
-def create_fasta_channel(LinkedHashMap row) {
+def create_reference_channel(LinkedHashMap row, boolean cluster) {
     // create meta map
     def meta = [:]
-    meta.ref = row.reference
+    meta.id  = row.reference
+    meta.ref = row.cluster
 
     if (!file(row.fasta).exists()) {
         exit 1, "ERROR: Please check reference samplesheet -> FASTA file does not exist!\n${row.fasta}"
     }
-    return [ meta, file(row.fasta) ]
+    if (!file(row.snp_cons).exists()) {
+        exit 1, "ERROR: Please check reference samplesheet -> SNP consensus file does not exist!\n${row.fasta}"
+    }
+    if (!cluster) {
+        if (!file(row.bwa, type: 'dir').exists()) {
+            exit 1, "ERROR: Please check reference samplesheet -> BWA directory does not exist!\n${row.fasta}"
+        }
+        if (!file(row.fai).exists()) {
+            exit 1, "ERROR: Please check reference samplesheet -> FAI file does not exist!\n${row.fasta}"
+        }
+        if (!file(row.mutations_matrix).exists()) {
+            exit 1, "ERROR: Please check reference samplesheet -> Mutations matrix file does not exist!\n${row.fasta}"
+        }
+        return [ meta, file(row.fasta), file(row.bwa, type: 'dir'), file(row.fai), file(row.snp_cons), file(row.mutations_matrix) ]
+    }
+    return [ meta, file(row.fasta), file(row.snp_cons) ]
 }

@@ -48,16 +48,6 @@ class WorkflowLegiocluster {
         return yaml_file_text
     }
 
-    public static List genomesFastaList(params) {
-        List genome_fastas = []
-        for (genome in params.genomes.keySet()) {
-            if (params.genomes.get(genome).containsKey('fasta')) {
-                genome_fastas.add(params.genomes.get(genome).fasta)
-            }
-        }
-        return genome_fastas
-    }
-
     //
     // Exit pipeline if incorrect --genome key provided
     //

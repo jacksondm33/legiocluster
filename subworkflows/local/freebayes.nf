@@ -4,12 +4,12 @@ include { PARSE_VCF_OUTPUT              } from '../../modules/local/parse_vcf_ou
 
 workflow FREEBAYES {
     take:
-    bam   // channel: [ val(meta), bam ]
-    fasta // channel: [ val(meta), fasta ]
-    fai   // channel: [ val(meta), fai ]
-    snp_threshold
-    depth_mean
-    depth_sd
+    bam           // channel: [ meta(id, ref), bam           ]
+    fasta         // channel: [ meta(id, ref), fasta         ]
+    fai           // channel: [ meta(id, ref), fai           ]
+    snp_threshold // channel: [ meta(id, ref), snp_threshold ]
+    depth_mean    // channel: [ meta(id, ref), depth_mean    ]
+    depth_sd      // channel: [ meta(id, ref), depth_sd      ]
 
     main:
     ch_reports = Channel.empty()

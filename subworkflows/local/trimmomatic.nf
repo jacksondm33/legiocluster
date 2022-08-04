@@ -6,7 +6,7 @@ include { REDUCE_READS                      } from '../../modules/local/reduce_r
 
 workflow TRIMMOMATIC {
     take:
-    reads // channel: [ val(meta), [ reads ] ]
+    reads // channel: [ meta(id), [ reads ] ]
 
     main:
     ch_reports = Channel.empty()

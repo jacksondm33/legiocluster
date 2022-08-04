@@ -18,22 +18,30 @@ include { MAKE_MST    } from '../subworkflows/local/make_mst'
 
 workflow LEGIOCLUSTER_MAIN {
     take:
-    ch_reads
-    ch_contigs
-    ch_filtered_contigs
-    ch_fastas
-    ch_reports
-    ch_versions
-    ch_add_fastas
+    ch_reads            // channel: [ meta(id), [ reads ] ]
+    ch_contigs          // channel: [ meta(id), contigs ]
+    ch_filtered_contigs // channel: [ meta(id), filtered_contigs ]
+    ch_fastas           // channel: [ [ meta(ref), fasta ] ]
+    ch_bwa_index        // channel: [ [ meta(ref), bwa_index ] ]
+    ch_bwa_fai          // channel: [ [ meta(ref), bwa_fai ] ]
+    ch_reports          // channel: [ report.txt ]
+    ch_versions         // channel: [ versions.yml ]
 
     main:
 
+    ch_fastas
+        .flatMap()
+        .set { ch_fasta }
+
     ch_filtered_contigs.dump(tag: 'contigs')
     ch_fastas.dump(tag: 'fastas')
+    ch_fasta.dump(tag: 'fasta')
 
     // Mash sketch
     MASH_SKETCH (
-        ch_fastas.collect { it[1] }.map { [ [:], it ] }.dump(), // Hack to make nextflow recursion work
+        ch_fasta
+            .collect { it[1] }
+            .map { [ [:], it ] },
         false,
         false
     )
@@ -50,7 +58,7 @@ workflow LEGIOCLUSTER_MAIN {
             MASH_FA.out.fastas
                 .map {
                     meta, fastas ->
-                    [ meta, meta.set_ref != 'NO_FILE' ? [ meta.set_ref ] : fastas ]
+                    [ meta, meta.set_ref != '' ? [ meta.set_ref ] : fastas ]
                 }
                 .transpose(),
             by: 0)
@@ -58,9 +66,15 @@ workflow LEGIOCLUSTER_MAIN {
             meta, reads, fasta ->
             [ meta + [ref: fasta], reads ]
         }
-        .cross(ch_fastas) { it[0].ref } // TODO: Use spades filtered_contigs
+        .cross(ch_fasta) { it[0].ref }
         .map { it[0] + [ it[1][1] ] }
         .set { ch_bwa_reads_fasta }
+
+    ch_bwa_reads_fasta
+        .map {
+            meta, reads, fasta ->
+            [ [ref: meta.ref], fasta ]
+        }
 
     // Run bwa fa
     BWA_FA (
@@ -235,10 +249,12 @@ workflow LEGIOCLUSTER_MAIN {
     ch_versions = ch_versions.mix(FREEBAYES.out.versions)
 
     emit:
-    Channel.empty()
-    Channel.empty()
-    Channel.empty()
-    ch_ref
-    ch_reports
-    ch_versions
+    Channel.empty()     // channel: [ meta(id), [ reads ] ]
+    Channel.empty()     // channel: [ meta(id), contigs ]
+    Channel.empty()     // channel: [ meta(id), filtered_contigs ]
+    Channel.empty()     // channel: [ meta(ref), fasta ]
+    BWA_FA.out.index    // channel: [ meta(ref), bwa_index ]
+    BWA_FA.out.fai      // channel: [ meta(ref), bwa_fai ]
+    ch_reports          // channel: [ report.txt ]
+    ch_versions         // channel: [ versions.yml ]
 }

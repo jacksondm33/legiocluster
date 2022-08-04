@@ -4,8 +4,8 @@ include { CALCULATE_COVERAGE      } from '../../modules/local/calculate_coverage
 
 workflow FASTQC {
     take:
-    raw_reads  // channel: [ val(meta), [ raw_reads ] ]
-    proc_reads // channel: [ val(meta), [ proc_reads ] ]
+    raw_reads  // channel: [ meta(id), [ raw_reads ]  ]
+    proc_reads // channel: [ meta(id), [ proc_reads ] ]
 
     main:
     ch_reports = Channel.empty()

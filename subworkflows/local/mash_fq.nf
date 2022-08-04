@@ -1,12 +1,12 @@
-include { CONCATENATE                        } from '../../modules/local/concatenate'
-include { MASH_SKETCH as MASH_SKETCH_FQ      } from '../../modules/local/mash_sketch'
-include { MASH_DIST as MASH_DIST_FQ          } from '../../modules/local/mash_dist'
-include { PARSE_MASH_OUTPUT                  } from '../../modules/local/parse_mash_output'
+include { CONCATENATE       } from '../../modules/local/concatenate'
+include { MASH_SKETCH       } from '../../modules/local/mash_sketch'
+include { MASH_DIST         } from '../../modules/local/mash_dist'
+include { PARSE_MASH_OUTPUT } from '../../modules/local/parse_mash_output'
 
 workflow MASH_FQ {
     take:
-    reads // channel: [ meta, [ reads ] ]
-    mash  // channel: [ mash ]
+    reads // channel: [ meta(id), [ reads ] ]
+    mash  // channel: [ meta(id), mash      ]
 
     main:
     ch_reports = Channel.empty()
@@ -16,27 +16,26 @@ workflow MASH_FQ {
         reads
     )
 
-    MASH_SKETCH_FQ (
+    MASH_SKETCH (
         CONCATENATE.out.cat,
         true,
         true
     )
 
-    MASH_DIST_FQ (
-        MASH_SKETCH_FQ.out.mash,
-        mash,
+    MASH_DIST (
+        MASH_SKETCH.out.mash.join(mash),
         'RvSp'
     )
 
     PARSE_MASH_OUTPUT (
-        MASH_DIST_FQ.out.dist,
+        MASH_DIST.out.dist,
         Channel.of(
             params.genomes
                 .collect {
                     genome, info ->
                     genome + ',' + info.binomial
                 })
-            .flatten()
+            .flatMap()
             .collectFile(name: "species.csv", newLine: true, sort: true)
             .first(),
         params.genome
@@ -46,8 +45,8 @@ workflow MASH_FQ {
     ch_reports = ch_reports.concat(PARSE_MASH_OUTPUT.out.report)
 
     // Collect versions
-    ch_versions = ch_versions.mix(MASH_SKETCH_FQ.out.versions)
-    ch_versions = ch_versions.mix(MASH_DIST_FQ.out.versions)
+    ch_versions = ch_versions.mix(MASH_SKETCH.out.versions)
+    ch_versions = ch_versions.mix(MASH_DIST.out.versions)
     ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT.out.versions)
 
     emit:

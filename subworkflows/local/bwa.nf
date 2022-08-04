@@ -12,11 +12,11 @@ include { PARSE_BWA_OUTPUT                        } from '../../modules/local/pa
 
 workflow BWA {
     take:
-    reads // channel: [ meta, [ reads ] ]
-    fasta // channel: [ meta, fasta ]
-    index // channel: [ meta, index ]
-    fai   // channel: [ meta, fai ]
-    mapped_threshold
+    reads            // channel: [ meta(id, ref), [ reads ]        ]
+    fasta            // channel: [ meta(id, ref), fasta            ]
+    index            // channel: [ meta(id, ref), index            ]
+    fai              // channel: [ meta(id, ref), fai              ]
+    mapped_threshold // channel: [ meta(id, ref), mapped_threshold ]
 
     main:
     ch_reports = Channel.empty()
