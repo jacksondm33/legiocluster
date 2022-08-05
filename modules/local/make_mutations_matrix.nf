@@ -8,16 +8,16 @@ process MAKE_MUTATIONS_MATRIX {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    tuple val(meta), path(cluster_pairwise_diffs)
+    tuple val(meta), path(cluster_pairwise_diffs), path(mutations_matrix)
 
     output:
-    tuple val(meta), path(mutations_matrix)    , emit: mutations_matrix
-    tuple val(meta), path(snp_matrix)          , emit: snp_matrix
-    tuple val(meta), path(me_matrix)           , emit: me_matrix
-    tuple val(meta), path(concat_pairwise_snps), emit: concat_pairwise_snps
-    tuple val(meta), path(concat_pairwise_mes) , emit: concat_pairwise_mes
-    tuple val(meta), path(log_file)            , emit: log
-    path  "versions.yml"                       , emit: versions
+    tuple val(meta), path(mutations_matrix, includeInputs: true), emit: mutations_matrix
+    tuple val(meta), path(snp_matrix)                           , emit: snp_matrix
+    tuple val(meta), path(me_matrix)                            , emit: me_matrix
+    tuple val(meta), path(concat_pairwise_snps)                 , emit: concat_pairwise_snps
+    tuple val(meta), path(concat_pairwise_mes)                  , emit: concat_pairwise_mes
+    tuple val(meta), path(log_file)                             , emit: log
+    path  "versions.yml"                                        , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -26,7 +26,6 @@ process MAKE_MUTATIONS_MATRIX {
     prefix = task.ext.prefix ?: "${meta.ref}"
 
     log_level            = "INFO"
-    mutations_matrix     = "${prefix}_mutations_matrix.csv"
     snp_matrix           = "${prefix}_SNP_matrix.csv"
     me_matrix            = "${prefix}_ME_matrix.csv"
     concat_pairwise_snps = "${prefix}_concat_pairwise_snps.csv"

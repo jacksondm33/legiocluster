@@ -5,13 +5,14 @@ include { MAKE_MST as MAKE_MST_SNPS } from '../../modules/local/make_mst'
 workflow MAKE_MST {
     take:
     cluster_pairwise_diffs // channel: [ meta(ref), [ cluster_pairwise_diffs ] ]
+    mutations_matrix       // channel: [ meta(ref), mutations_matrix           ]
 
     main:
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
     MAKE_MUTATIONS_MATRIX (
-        cluster_pairwise_diffs
+        cluster_pairwise_diffs.join(mutations_matrix)
     )
 
     MAKE_MST_MES (

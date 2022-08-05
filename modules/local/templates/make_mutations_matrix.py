@@ -29,6 +29,50 @@ def write_csv(outfile, lo_rows):
             csv_writer.writerow(row)
 
 
+def read_mutations_matrix(mutations_matrix_file):
+    """
+    Takes a matrix of data from the CSV file and returns pairs of tuples:
+      [(G1, G2, V1, V2, V3, V4),(G2, G1, V1, V2, V3, V4), ...], excluding cases
+      where G1 == G2.
+    param: list lo_rows = list of lists, where the inner lists are the rows
+           of the CSV file
+    return: list of tuples: [(G1, G2, V1, V2, V3, V4), ...]; e.g.:
+            [('iso1', 'iso2', 2, 1, 4, 1), ('iso2', 'iso1', 2, 1, 4, 1), ...]
+    """
+
+    lo_rows = []
+    snd_lo_pairwise_diffs = []
+
+    with open(mutations_matrix_file, newline='') as infile:
+        reader = csv.reader(infile)
+        for count, row in enumerate(reader):
+            k = [cell for cell in row if cell != ''] # remove empty cells ''
+            if k != []:                              # ignore empty lists []
+                if count == 0:       # if it is the header row ...
+                    k = [''] + k     # ... add an empty cell in top left corner
+                lo_rows.append(k)
+
+    # lo_rows[0][i] are the isolate names in the first column
+    # lo_rows[j][0] are the isolate names in the first row
+    # lo_rows[j][i] are the SNPs per column / row
+    for i in range(1, len(lo_rows)):
+        for j in range(1, len(lo_rows)):
+            # if the two isolates have different names
+            if lo_rows[0][i] != lo_rows[j][0]:
+                # extract the names and values
+                G1 = lo_rows[0][i]
+                G2 = lo_rows[j][0]
+                lo_Vs = lo_rows[j][i].split()
+                V1 = int(lo_Vs[0])
+                V2 = int(lo_Vs[1][1:-1]) # omitting the ( and ,
+                V3 = int(lo_Vs[2][:-1])  # omitting the ,
+                V4 = int(lo_Vs[3][:-1])  # omitting the )
+                # add names and values to the list
+                snd_lo_pairwise_diffs.append((G1,G2,V1,V2,V3,V4))
+
+    return snd_lo_pairwise_diffs
+
+
 def write_mutations_matrix(mutations_matrix_file, lo_pairwise_diffs):
     """
     Takes a list of pairwise differences, and writes a matrix to file:
@@ -271,6 +315,7 @@ def make_mutations_matrix(lo_cluster_pairwise_diffs, mutations_matrix_file,
     output: new or updated 'mutations_matrix.csv' file
     """
 
+    snd_lo_pairwise_diffs = read_mutations_matrix(mutations_matrix_file)
     so_pairwise_diffs = set()
 
     for pairwise_diffs_file in lo_cluster_pairwise_diffs:
@@ -280,7 +325,7 @@ def make_mutations_matrix(lo_cluster_pairwise_diffs, mutations_matrix_file,
                 so_pairwise_diffs.add((G1, G2, int(V1), int(V2), int(V3), int(V4)))
                 so_pairwise_diffs.add((G2, G1, int(V1), int(V2), int(V3), int(V4)))
 
-    lo_pairwise_diffs = list(so_pairwise_diffs)
+    lo_pairwise_diffs = snd_lo_pairwise_diffs + list(so_pairwise_diffs)
 
     # writes the mutations matrix, [V1 (V2, V3, V4)], to the
     # 'mutations_matrix.csv' file

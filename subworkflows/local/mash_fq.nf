@@ -29,13 +29,12 @@ workflow MASH_FQ {
 
     PARSE_MASH_OUTPUT (
         MASH_DIST.out.dist,
-        Channel.of(
+        Channel.fromList(
             params.genomes
                 .collect {
                     genome, info ->
                     genome + ',' + info.binomial
                 })
-            .flatMap()
             .collectFile(name: "species.csv", newLine: true, sort: true)
             .first(),
         params.genome

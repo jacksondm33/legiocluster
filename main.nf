@@ -10,7 +10,6 @@
 */
 
 nextflow.enable.dsl = 2
-nextflow.preview.recursion = true
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,7 +25,11 @@ WorkflowMain.initialise(workflow, params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { LEGIOCLUSTER as LC } from './workflows/legiocluster'
+if (params.generate_references) {
+    include { GENERATE_REFERENCES } from './workflows/generate_references'
+} else {
+    include { LEGIOCLUSTER as LC  } from './workflows/legiocluster'
+}
 
 //
 // WORKFLOW: Run main nf-core/legiocluster analysis pipeline
@@ -46,7 +49,11 @@ workflow NFCORE_LEGIOCLUSTER {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    LC ()
+    if (params.generate_references) {
+        GENERATE_REFERENCES ()
+    } else {
+        LC ()
+    }
 }
 
 /*
