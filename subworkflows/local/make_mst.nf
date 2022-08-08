@@ -28,8 +28,8 @@ workflow MAKE_MST {
     )
 
     // Collect reports
-    ch_reports = ch_reports.concat(MAKE_MST_MES.out.reports)
-    ch_reports = ch_reports.concat(MAKE_MST_SNPS.out.reports)
+    ch_reports = ch_reports.concat(MAKE_MST_MES.out.report)
+    ch_reports = ch_reports.concat(MAKE_MST_SNPS.out.report)
 
     emit:
     mutations_matrix = MAKE_MUTATIONS_MATRIX.out.mutations_matrix
