@@ -31,7 +31,7 @@ workflow CHECK_INPUT {
     CHECK_REFERENCES.out.csv
         .splitCsv(header: true, sep: ',')
         .branch {
-            reference: it.reference == it.cluster
+            reference: it.sample == it.reference
             cluster_reference: true
         }
         .set { ch_reference_branch }
@@ -56,6 +56,20 @@ workflow CHECK_INPUT {
             snp_cons: [ meta, snp_cons ]
         }
         .set { ch_cluster_reference }
+
+    ch_reference.fasta
+        .map {
+            meta, fasta ->
+            [ [id: meta.ref], fasta ]
+        }
+        .mix(ch_cluster_reference.fasta)
+        .cross(ch_reads) { it[0].id }
+        .map { error "[ERROR] An isolate with the name '${it[0][0].id}' already exists as a reference." }
+
+    ch_reads
+        .count()
+        .filter { it > 1 }
+        .view { "[NOTICE] Multiple samples will cluster independently of each other. If this behavior is not desired, run each sample sequentially instead." }
 
     // Collect versions
     ch_versions = ch_versions.mix(CHECK_SAMPLES.out.versions)
@@ -87,6 +101,7 @@ def create_reads_channel(LinkedHashMap row) {
     if (!file(row.fastq_2).exists()) {
         exit 1, "ERROR: Please check input samplesheet -> Read 2 FASTQ file does not exist!\n${row.fastq_2}"
     }
+
     return [ meta, [ file(row.fastq_1), file(row.fastq_2) ] ]
 }
 
@@ -94,8 +109,7 @@ def create_reads_channel(LinkedHashMap row) {
 def create_reference_channel(LinkedHashMap row, boolean cluster_reference) {
     // create meta map
     def meta = [:]
-    //meta.id  = row.reference
-    meta.ref = row.cluster
+    meta.ref = row.reference
 
     if (!file(row.fasta).exists()) {
         exit 1, "ERROR: Please check reference samplesheet -> FASTA file does not exist!\n${row.fasta}"
@@ -103,6 +117,7 @@ def create_reference_channel(LinkedHashMap row, boolean cluster_reference) {
     if (!file(row.snp_cons).exists()) {
         exit 1, "ERROR: Please check reference samplesheet -> SNP consensus file does not exist!\n${row.fasta}"
     }
+
     if (!cluster_reference) {
         if (!file(row.bwa, type: 'dir').exists()) {
             exit 1, "ERROR: Please check reference samplesheet -> BWA directory does not exist!\n${row.fasta}"
@@ -115,5 +130,7 @@ def create_reference_channel(LinkedHashMap row, boolean cluster_reference) {
         }
         return [ meta, file(row.fasta), file(row.snp_cons), file(row.bwa, type: 'dir'), file(row.fai), file(row.mutations_matrix) ]
     }
+
+    meta.id = row.sample
     return [ meta, file(row.fasta), file(row.snp_cons) ]
 }

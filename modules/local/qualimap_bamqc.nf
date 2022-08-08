@@ -22,7 +22,6 @@ process QUALIMAP_BAMQC {
     def args = task.ext.args ?: ''
     def memory = task.memory.toGiga() + "G"
     prefix = task.ext.prefix ?: "${meta.id}"
-
     """
     qualimap \\
         --java-mem-size=$memory \\

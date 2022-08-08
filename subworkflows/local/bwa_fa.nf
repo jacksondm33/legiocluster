@@ -21,7 +21,7 @@ workflow BWA_FA {
     ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 
     emit:
-    index = BWA_INDEX.out.index
+    bwa = BWA_INDEX.out.index
     fai = SAMTOOLS_FAIDX.out.fai
     versions = ch_versions // channel: [ versions.yml ]
 }

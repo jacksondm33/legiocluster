@@ -1,4 +1,3 @@
-include { CHECK_PERCENT_MAPPED  } from '../../modules/local/check_percent_mapped'
 include { QUAST as QUAST_MODULE } from '../../modules/local/quast'
 include { PARSE_QUAST_OUTPUT    } from '../../modules/local/parse_quast_output'
 include { COUNT_NNN_GAPS        } from '../../modules/local/count_nnn_gaps'
@@ -11,16 +10,11 @@ workflow QUAST {
     percent_mapped
     max_no_ns
     max_no_gaps
-    min_percent_mapped
     mapped_threshold
 
     main:
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
-
-    CHECK_PERCENT_MAPPED (
-        percent_mapped.join(min_percent_mapped)
-    )
 
     QUAST_MODULE (
         contigs.join(fasta)

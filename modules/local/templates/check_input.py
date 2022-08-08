@@ -139,7 +139,7 @@ def check_input(file_in, file_out, references):
 
     """
     if references:
-        required_columns = {"reference", "fasta"}
+        required_columns = {"sample", "reference", "fasta", "snp_cons"}
     else:
         required_columns = {"sample", "fastq_1", "fastq_2", "set_ref", "make_ref"}
 
@@ -152,7 +152,7 @@ def check_input(file_in, file_out, references):
             sys.exit(1)
         # Validate each row.
         if references:
-            checker = RowChecker("reference", [], ["fasta"])
+            checker = RowChecker("sample", [], ["fasta"])
         else:
             checker = RowChecker("sample", ["fastq_1", "fastq_2"], [])
         for i, row in enumerate(reader):

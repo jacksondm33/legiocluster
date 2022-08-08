@@ -18,8 +18,7 @@ workflow MASH_FQ {
 
     MASH_SKETCH (
         CONCATENATE.out.cat,
-        true,
-        true
+        'comb_reads'
     )
 
     MASH_DIST (

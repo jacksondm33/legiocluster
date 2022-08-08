@@ -35,11 +35,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 // Modules
 include { MASH_SKETCH                 } from '../modules/local/mash_sketch'
-include { CREATE_SNP_CONS_FA          } from '../modules/local/create_snp_cons_fa'
 include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
 include { COMPARE_SNPS                } from '../modules/local/compare_snps'
 include { CHECK_REF_QUAL              } from '../modules/local/check_ref_qual'
-include { MAKE_REFERENCES             } from '../modules/local/make_references'
 include { CREATE_REPORT               } from '../modules/local/create_report'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/local/custom_dumpsoftwareversions'
 include { MULTIQC                     } from '../modules/local/multiqc'
@@ -120,6 +118,7 @@ workflow LEGIOCLUSTER {
         .combine(
             CHECK_INPUT.out.fasta
                 .collect { it[1] }
+                .map { [ it ] }
         )
         .multiMap {
             meta, fasta, fastas ->
@@ -161,13 +160,14 @@ workflow LEGIOCLUSTER {
         .map { it[0] + it[1][1..-1] }
         .multiMap {
             meta, reads, contigs, filtered_contigs, fasta, bwa, fai ->
-            reads:            [ meta, reads                                                                  ]
-            contigs:          [ meta, contigs                                                                ]
-            filtered_contigs: [ meta, filtered_contigs                                                       ]
-            fasta:            [ meta, fasta                                                                  ]
-            bwa:              [ meta, index                                                                  ]
-            fai:              [ meta, fai                                                                    ]
-            mapped_threshold: [ meta, meta.set_ref != '' ? 0 : meta.make_ref ? 100 : params.mapped_threshold ]
+            reads:              [ meta, reads                                                                    ]
+            contigs:            [ meta, contigs                                                                  ]
+            filtered_contigs:   [ meta, filtered_contigs                                                         ]
+            fasta:              [ meta, fasta                                                                    ]
+            bwa:                [ meta, bwa                                                                      ]
+            fai:                [ meta, fai                                                                      ]
+            mapped_threshold:   [ meta, meta.set_ref != '' ? 0 : meta.make_ref ? 100 : params.mapped_threshold   ]
+            min_percent_mapped: [ meta, meta.set_ref != '' ? 0 : meta.make_ref ? 0   : params.min_percent_mapped ]
         }
         .set { ch_bwa }
 
@@ -184,15 +184,24 @@ workflow LEGIOCLUSTER {
     // Contains the BWA output files and reference files for
     // each sample and its best reference (maximum percent mapped).
     BWA.out.percent_mapped
+        .join(ch_bwa.min_percent_mapped)
         .map {
-            meta, percent_mapped ->
-            [ [id: meta.id], [ meta, percent_mapped ] ]
+            meta, percent_mapped, min_percent_mapped ->
+            [ [id: meta.id], [ meta, percent_mapped, min_percent_mapped ] ]
         }
         .groupTuple()
         .map {
             meta, output ->
             output.max { it[1] }
         }
+        .branch {
+            meta, percent_mapped, min_percent_mapped ->
+            passed_min_percent_mapped: percent_mapped > min_percent_mapped
+            failed_min_percent_mapped: true
+        }
+        .set { ch_bwa_out_branch }
+
+    ch_bwa_out_branch.passed_min_percent_mapped
         .join(BWA.out.depth)
         .join(BWA.out.bam)
         .join(BWA.out.mpileup)
@@ -202,22 +211,27 @@ workflow LEGIOCLUSTER {
         .join(ch_bwa.fai)
         .join(ch_bwa.mapped_threshold)
         .multiMap {
-            meta, percent_mapped, depth, bam, mpileup, contigs, filtered_contigs, fasta, fai, mapped_threshold ->
-            percent_mapped:     [ meta, percent_mapped                                                                         ]
-            depth:              [ meta, depth                                                                                  ]
-            bam:                [ meta, bam                                                                                    ]
-            mpileup:            [ meta, mpileup                                                                                ]
-            contigs:            [ meta, contigs                                                                                ]
-            filtered_contigs:   [ meta, filtered_contigs                                                                       ]
-            fasta:              [ meta, fasta                                                                                  ]
-            fai:                [ meta, fai                                                                                    ]
-            mapped_threshold:   [ meta, mapped_threshold                                                                       ]
-            max_no_ns:          [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 999999999 : params.max_no_ns          ]
-            max_no_gaps:        [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 999999999 : params.max_no_gaps        ]
-            snp_threshold:      [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 0         : params.snp_threshold      ]
-            min_percent_mapped: [ meta, meta.set_ref != '' ? 0         : meta.make_ref ? 0         : params.min_percent_mapped ]
+            meta, percent_mapped, min_percent_mapped, depth, bam, mpileup, contigs, filtered_contigs, fasta, fai, mapped_threshold ->
+            percent_mapped:     [ meta, percent_mapped                                                                    ]
+            depth:              [ meta, depth                                                                             ]
+            bam:                [ meta, bam                                                                               ]
+            mpileup:            [ meta, mpileup                                                                           ]
+            contigs:            [ meta, contigs                                                                           ]
+            filtered_contigs:   [ meta, filtered_contigs                                                                  ]
+            fasta:              [ meta, fasta                                                                             ]
+            fai:                [ meta, fai                                                                               ]
+            mapped_threshold:   [ meta, mapped_threshold                                                                  ]
+            max_no_ns:          [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 999999999 : params.max_no_ns     ]
+            max_no_gaps:        [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 999999999 : params.max_no_gaps   ]
+            snp_threshold:      [ meta, meta.set_ref != '' ? 999999999 : meta.make_ref ? 0         : params.snp_threshold ]
         }
         .set { ch_bwa_out }
+
+    ch_bwa_out_branch.failed_min_percent_mapped
+        .view {
+            meta, percent_mapped, min_percent_mapped ->
+            "[WARNING] There were only ${percent_mapped}% mapped reads, which is far too few."
+        }
 
     // Run Quast
     QUAST (
@@ -227,7 +241,6 @@ workflow LEGIOCLUSTER {
         ch_bwa_out.percent_mapped,
         ch_bwa_out.max_no_ns,
         ch_bwa_out.max_no_gaps,
-        ch_bwa_out.min_percent_mapped,
         ch_bwa_out.mapped_threshold
     )
 
@@ -279,8 +292,7 @@ workflow LEGIOCLUSTER {
     CREATE_SNP_CONS (
         ch_freebayes_close.fasta
             .join(ch_freebayes_close.mpileup)
-            .join(ch_freebayes_close.freebayes),
-        false
+            .join(ch_freebayes_close.freebayes)
     )
 
     // Compare SNPs channel
@@ -288,7 +300,13 @@ workflow LEGIOCLUSTER {
     // combined with the list of SNP consensuses
     // of all the samples in its cluster
     CHECK_INPUT.out.snp_cons
-        .mix(CHECK_INPUT.out.cluster_snp_cons)
+        .mix(
+            CHECK_INPUT.out.cluster_snp_cons
+                .map {
+                    meta, snp_cons ->
+                    [ [ref: meta.ref], snp_cons ]
+                }
+        )
         .groupTuple()
         .cross(
             CREATE_SNP_CONS.out.snp_cons
@@ -408,7 +426,7 @@ workflow LEGIOCLUSTER {
         )
         .map {
             meta, fasta, snp_cons, bwa, fai, mutations_matrix ->
-            [ meta.ref, meta.ref, fasta, snp_cons, bwa, fai, mutations_matrix ]
+            [ meta.ref, meta.ref, fasta, snp_cons, bwa, fai, mutations_matrix ].join(',')
         }
         .set { ch_make_references_reference }
 
@@ -422,17 +440,15 @@ workflow LEGIOCLUSTER {
         )
         .map {
             meta, fasta, snp_cons ->
-            [ meta.id, meta.ref, fasta, snp_cons, '', '', '' ]
+            [ meta.id, meta.ref, fasta, snp_cons, '', '', '' ].join(',')
         }
         .set { ch_make_references_cluster_reference }
 
     // Make references
-    MAKE_REFERENCES (
-        ch_make_references_reference
-            .mix(ch_make_references_cluster_reference)
-            .groupTuple(by: [])
-            .dump(tag: 'make_references')
-    )
+    references_header = [ 'sample', 'reference', 'fasta', 'snp_cons', 'bwa', 'fai', 'mutations_matrix' ].join(',')
+    ch_make_references_reference
+        .mix(ch_make_references_cluster_reference)
+        .collectFile(name: "references_${params.genome}.csv", newLine: true, seed: references_header, sort: true, storeDir: params.outdir)
 
     // Collect reports
     ch_reports = ch_reports.concat(TRIMMOMATIC.out.reports)
@@ -444,6 +460,7 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(QUAST.out.reports)
     ch_reports = ch_reports.concat(QUALIMAP.out.reports)
     ch_reports = ch_reports.concat(FREEBAYES.out.reports)
+    ch_reports = ch_reports.concat(MAKE_MST.out.reports)
 
     // Create report
     CREATE_REPORT (

@@ -57,8 +57,7 @@ workflow GENERATE_REFERENCES {
     // Mash sketch (genomes)
     MASH_SKETCH (
         ch_genomes.map { [ [:], it ] },
-        false,
-        true
+        'ref_RvSp'
     )
 
     ch_references
@@ -76,16 +75,12 @@ workflow GENERATE_REFERENCES {
         .join(MAKE_REFERENCE.out.mutations_matrix)
         .map {
             meta, fasta, snp_cons, bwa, fai, mutations_matrix ->
-            [ meta.ref, meta.ref, fasta, snp_cons, bwa, fai, mutations_matrix ]
+            [ meta.ref, meta.ref, fasta, snp_cons, bwa, fai, mutations_matrix ].join(',')
         }
-        .groupTuple(by: [])
-        .dump(tag: 'make_references')
         .set { ch_make_references }
 
-    MAKE_REFERENCES (
-        ch_make_references,
-        Channel.fromPath(params.outdir + "/references_${params.genome}.csv")
-    )
+    references_header = [ 'sample', 'reference', 'fasta', 'snp_cons', 'bwa', 'fai', 'mutations_matrix' ].join(',')
+    ch_make_references.collectFile(name: "references_${params.genome}.csv", newLine: true, seed: references_header, sort: true, storeDir: params.outdir)
 
 }
 

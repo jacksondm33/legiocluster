@@ -77,7 +77,7 @@ def write_ref_seq(snp_cons_file, reference, lo_bases):
             print(base[2], file=outfile)
 
 
-def create_snp_cons_fa(reference_file, snp_cons_file, bases_file, reference):
+def create_snp_cons_fa(reference_file, snp_cons_file, reference):
     """
     main function
     param: str isolate = isolate name, e.g.: 'IDR001234'
@@ -93,11 +93,6 @@ def create_snp_cons_fa(reference_file, snp_cons_file, bases_file, reference):
     # generates a <ref>_SNP_cons.txt file
     write_ref_seq(snp_cons_file, reference, lo_bases)
 
-    with open(bases_file, 'a', newline='') as bases:
-        bases_writer = csv.writer(bases)
-        for entry in lo_bases:
-            bases_writer.writerow(entry)
-
 
 if __name__ == "__main__":
     logging.basicConfig(filename="$log_file", level="$log_level", format="[%(levelname)s] %(message)s")
@@ -110,5 +105,5 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(create_snp_cons_fa("$fasta", "$snp_cons", "$bases", "$meta.ref"))
+    sys.exit(create_snp_cons_fa("$fasta", "$snp_cons", "$meta.ref"))
 

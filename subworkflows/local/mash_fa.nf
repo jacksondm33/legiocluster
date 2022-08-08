@@ -15,14 +15,12 @@ workflow MASH_FA {
 
     MASH_SKETCH (
         fasta,
-        false,
-        false
+        'query_FAvNCBI'
     )
 
     MASH_SKETCH_REFERENCES (
         fastas,
-        false,
-        false
+        'ref_FAvNCBI'
     )
 
     MASH_DIST (

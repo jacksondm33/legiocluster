@@ -43,7 +43,7 @@ def make_graph(lo_concat_pairwise_diffs):
     return graph
 
 
-def prim_mst(graph, start):
+def prim_mst(graph):
     """
     Construct the Minimum Spanning Tree for a graph and starting node, using
       Prim's greedy algorithm.
@@ -53,6 +53,7 @@ def prim_mst(graph, start):
       G1:[G2, G3]
     """
 
+    start = next(iter(graph))
     lo_nodes = []  # nodes in MST
     MST = {}       # the MST
 
@@ -208,7 +209,7 @@ def adding_nodes(edge, graph_object, color):
     return graph_object
 
 
-def finish_draw_graph(graph_object, reference, isolate, color):
+def finish_draw_graph(graph_object, reference, color):
     """
     Changes the colors and shapes of the reference and query in the MST.
     param: graph_object = the graph object
@@ -221,13 +222,13 @@ def finish_draw_graph(graph_object, reference, isolate, color):
     graph_object.add_node(pydot.Node(reference, shape='box', style='filled',
                                      fillcolor='orange'))
 
-    graph_object.add_node(pydot.Node(isolate, shape='box', style='filled',
-                                     fillcolor=color))
+    # graph_object.add_node(pydot.Node(isolate, shape='box', style='filled',
+    #                                  fillcolor=color))
 
     return graph_object
 
 
-def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
+def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, genome, reference):
     """
     main function
     param: str isolate = name of the bacterial isolate, user supplied
@@ -238,26 +239,19 @@ def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
     param: str ABR = 'ME' or 'SNP'
     """
 
+    lo_concat_pairwise_diffs = []
+
     with open(concat_pairwise_diffs_file, newline='') as infile:
         reader = csv.reader(infile)
-        for G1, G2, V1, V2, V3, V4 in reader:
-            so_pairwise_diffs.add((G1, G2, int(V1), int(V2), int(V3), int(V4)))
-            so_pairwise_diffs.add((G2, G1, int(V1), int(V2), int(V3), int(V4)))
-
-    # if G1 and G2 have zero variants, they will be listed as 'G1\\nG2' in the
-    #   MST: will need to replace 'G2' with 'G1\\nG2', e.g.:
-    #   [['G1\\nG2', 'G3', 4, 0], ['G3', 'G1\\nG2', 4, 0]]
-    for innerlist in lo_concat_pairwise_diffs:
-        for element in innerlist:
-            if type(element) == str and isolate in element:
-                isolate = element
+        for G1, G2, V1 in reader:
+            lo_concat_pairwise_diffs.append((G1, G2, int(V1)))
 
     # formats the list of data into a graph dict
     graph = make_graph(lo_concat_pairwise_diffs)
     logger.info('## make_graph() completed')
 
     # returns a Minimum Spanning Tree
-    MST = prim_mst(graph, isolate)
+    MST = prim_mst(graph)
     logger.info('## prim_mst() completed')
 
     # converts the MST dict back into a list of tuples
@@ -278,8 +272,8 @@ def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, reference):
         adding_nodes(edge, graph_drawing, color)
     logger.info('## add_node() completed')
 
-    # highlights the reference and the isolate
-    finish_draw_graph(graph_drawing, reference, isolate, color)
+    # highlights the reference
+    finish_draw_graph(graph_drawing, reference, color)
 
     # save the drawn graph_object to file
     graph_drawing.write_png(mst_file)
@@ -303,4 +297,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$report", "$abr", "$meta.ref"))
+    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$report", "$abr", "$genome", "$meta.ref"))

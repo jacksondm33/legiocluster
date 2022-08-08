@@ -9,8 +9,7 @@ process MASH_SKETCH {
 
     input:
     tuple val(meta), path(reads)
-    val use_m
-    val use_k_s
+    val suffix
 
     output:
     tuple val(meta), path("*.msh"), emit: mash
@@ -23,15 +22,16 @@ process MASH_SKETCH {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}.msh"
-    def m_param = use_m ? '-m 2' : ''
-    def k_s_param = use_k_s ? '-k 16 -s 400' : ''
+    def output = "${prefix}_${suffix}.msh"
+    def add_params =
+        suffix == 'ref_RvSp'   ? '-k 16 -s 400'      :
+        suffix == 'comb_reads' ? '-m 2 -k 16 -s 400' :
+        ''
     """
     mash \\
         sketch \\
         -o $output \\
-        $m_param \\
-        $k_s_param \\
+        $add_params \\
         $args \\
         $reads \\
         > ${prefix}.log

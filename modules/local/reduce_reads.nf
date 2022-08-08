@@ -2,10 +2,10 @@ process REDUCE_READS {
     tag "$meta.id"
     label 'process_medium'
 
-    conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
+    conda (params.enable_conda ? 'bioconda::python=3.10' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/multiqc:1.12--pyhdfd78af_0' :
-        'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
+        'python-legiocluster:latest' :
+        'python-legiocluster:latest' }"
 
     input:
     tuple val(meta), path(reads)

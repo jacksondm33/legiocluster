@@ -284,7 +284,7 @@ def parse_mash_output(dist_file, references_file, report_file, species_file, gen
 
     if species_file != "NO_FILE":
         # the species based on the Mash data
-        mash_species = lo_min_dist_refs[0][:-3]
+        mash_species = lo_min_dist_refs[0]
 
         # over-riding the species check
         # sometimes the lab only provides the info that an isolate belongs to a

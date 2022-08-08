@@ -17,15 +17,22 @@ workflow MAKE_MST {
 
     MAKE_MST_MES (
         MAKE_MUTATIONS_MATRIX.out.concat_pairwise_mes,
-        'ME'
+        'ME',
+        params.genome
     )
 
     MAKE_MST_SNPS (
         MAKE_MUTATIONS_MATRIX.out.concat_pairwise_snps,
-        'SNP'
+        'SNP',
+        params.genome
     )
 
+    // Collect reports
+    ch_reports = ch_reports.concat(MAKE_MST_MES.out.reports)
+    ch_reports = ch_reports.concat(MAKE_MST_SNPS.out.reports)
+
     emit:
+    mutations_matrix = MAKE_MUTATIONS_MATRIX.out.mutations_matrix
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }
