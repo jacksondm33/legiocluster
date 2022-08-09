@@ -6,11 +6,11 @@
 
 import csv
 import logging
+import numpy as np
 import platform
 import sys
 import yaml
 from pathlib import Path
-from statistics import fmean, pstdev
 
 
 logger = logging.getLogger()
@@ -66,12 +66,16 @@ def parse_trimmomatic_output(trimlog_file, output_file, report_file, min_reads):
                 name = name1 + '/' + name2[0]
 
             # example for reads downloaded from NCBI:
-            # SRR6902774.1.1 1 length=251 251 0 251 0
-            # SRR6902774.1.2 1 length=251 129 0 129 122
-            # SRR6902774.2.1 2 length=250 250 0 250 0
+            # SRR6902774.1 1 length=251 251 0 251 0
+            # SRR6902774.1 1 length=251 129 0 129 122
+            # SRR6902774.2 2 length=250 250 0 250 0
             elif len(line_content) == 7:
-                name, count, in_length, trim_length, lost_5, loc, lost_3 \
+                base_name, count, in_length, trim_length, lost_5, loc, lost_3 \
                 = line_content
+                if prev_read[0] == base_name:
+                    name = base_name + '/2'
+                else:
+                    name = base_name + '/1'
 
             base_name = name[:-2]
             trim_length = int(trim_length)
@@ -129,25 +133,25 @@ def parse_trimmomatic_output(trimlog_file, output_file, report_file, min_reads):
               ' (', round(dropped*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
         print('Mean (SD) lengths of trimmed F reads:\t\t\t',\
-              round(fmean(lo_f_length_distr), 2), \
-              ' (', round(pstdev(lo_f_length_distr), 3), ')',\
+              round(np.mean(lo_f_length_distr), 2), \
+              ' (', round(np.std(lo_f_length_distr), 3), ')',\
               sep='', file=report)
         print('Mean (SD) lengths of trimmed R reads:\t\t\t',\
-              round(fmean(lo_r_length_distr), 2),\
-              ' (', round(pstdev(lo_r_length_distr), 3), ')',\
+              round(np.mean(lo_r_length_distr), 2),\
+              ' (', round(np.std(lo_r_length_distr), 3), ')',\
               sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of F reads(*):\t",\
-              round(fmean(lo_f_trim_5), 2),\
-              ' (', round(pstdev(lo_f_trim_5), 3), ')', sep='', file=report)
+              round(np.mean(lo_f_trim_5), 2),\
+              ' (', round(np.std(lo_f_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 5' of R reads(*):\t",\
-              round(fmean(lo_r_trim_5), 2),\
-              ' (', round(pstdev(lo_r_trim_5), 3), ')', sep='', file=report)
+              round(np.mean(lo_r_trim_5), 2),\
+              ' (', round(np.std(lo_r_trim_5), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of F reads(*):\t",\
-              round(fmean(lo_f_trim_3), 2),\
-              ' (', round(pstdev(lo_f_trim_3), 3), ')', sep='', file=report)
+              round(np.mean(lo_f_trim_3), 2),\
+              ' (', round(np.std(lo_f_trim_3), 3), ')', sep='', file=report)
         print("Mean (SD) no. of bases trimmed from 3' of R reads(*):\t",\
-              round(fmean(lo_r_trim_3), 2),\
-              ' (', round(pstdev(lo_r_trim_3), 3), ')', sep='', file=report)
+              round(np.mean(lo_r_trim_3), 2),\
+              ' (', round(np.std(lo_r_trim_3), 3), ')', sep='', file=report)
         print('(*) if trimmed read length > 0', file=report)
 
     max_read_len = max(lo_f_length_distr)

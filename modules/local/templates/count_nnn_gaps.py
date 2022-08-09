@@ -7,11 +7,11 @@
 import csv
 import logging
 import matplotlib.pyplot as plt
+import numpy as np
 import platform
 import re
 import sys
 import yaml
-from numpy import mean, std, ceil
 from pathlib import Path
 
 
@@ -77,15 +77,15 @@ def depth_by_group(lo_depths, MIN_DEPTH):
             lo_zeros.append(depth)
 
     if len(lo_above) > 0:
-        above = (mean(lo_above), std(lo_above), len(lo_above))
+        above = (np.mean(lo_above), np.std(lo_above), len(lo_above))
     else:
         above = (0,0,0)
     if len(lo_below) > 0:
-        below = (mean(lo_below), std(lo_below), len(lo_below))
+        below = (np.mean(lo_below), np.std(lo_below), len(lo_below))
     else:
         below = (0,0,0)
     if len(lo_zeros) > 0:
-        zero =  (mean(lo_zeros), std(lo_zeros), len(lo_zeros))
+        zero =  (np.mean(lo_zeros), np.std(lo_zeros), len(lo_zeros))
     else:
         zero = (0,0,0)
 
@@ -204,8 +204,8 @@ def histo_read_depth_distr(histo_depths_file, lo_depths):
             mean and mean +/- 3 StDev
     """
 
-    average = mean(lo_depths)
-    SD = std(lo_depths)
+    average = np.mean(lo_depths)
+    SD = np.std(lo_depths)
 
     plt.hist(lo_depths, bins=20, color='brown')
     # Draw a default (v-)line at x that spans the y-range
@@ -227,9 +227,9 @@ def plot_read_depth_distr(plot_depths_file, lo_depths):
             lines indicating the mean +/- 3 * StDev
     """
 
-    average = mean(lo_depths)
-    SD = std(lo_depths)
-    max_x_val = int(ceil(len(lo_depths)/500000)) + 1  # highest value on x-axis
+    average = np.mean(lo_depths)
+    SD = np.std(lo_depths)
+    max_x_val = int(np.ceil(len(lo_depths)/500000)) + 1  # highest value on x-axis
     fig, ax = plt.subplots()
 
     plt.plot(lo_depths, color='blue')
@@ -273,8 +273,8 @@ def count_nnn_gaps(depth_file, histo_depths_file, plot_depths_file,
     lo_gap_lens, no_gaps = count_gaps(ab_string, GAP_LENGTH)
 
     # mean and standard deviation for all bases
-    depth_mean = round(mean(lo_depths), 2)
-    depth_sd = round(std(lo_depths), 3)
+    depth_mean = round(np.mean(lo_depths), 2)
+    depth_sd = round(np.std(lo_depths), 3)
     # count number of bases above and below MIN_DEPTH
     count_all = len(ab_string)
     count_below = ab_string.count('B')

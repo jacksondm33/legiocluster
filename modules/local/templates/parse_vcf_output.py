@@ -7,10 +7,10 @@
 import csv
 import logging
 import matplotlib.pyplot as plt
+import numpy as np
 import platform
 import sys
 import yaml
-from numpy import ceil
 from pathlib import Path
 
 
@@ -220,7 +220,7 @@ def plot_mutation_dist(mutation_dist_file, isolate, lo_variant_posns, ref_seq_le
     """
 
     fig, ax = plt.subplots()
-    max_x_val = int(ceil(ref_seq_len/500000)) + 1  # highest value on x-axis
+    max_x_val = int(np.ceil(ref_seq_len/500000)) + 1  # highest value on x-axis
     # print a histogram to file, were each bin covers about 5000 bp of the
     #   genome over the length of the genome
     plt.hist(lo_variant_posns, bins=int(ref_seq_len/5000), \

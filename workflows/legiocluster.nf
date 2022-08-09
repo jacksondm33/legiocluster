@@ -34,7 +34,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 // Modules
-include { MASH_SKETCH                 } from '../modules/local/mash_sketch'
 include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
 include { COMPARE_SNPS                } from '../modules/local/compare_snps'
 include { CHECK_REF_QUAL              } from '../modules/local/check_ref_qual'
@@ -54,6 +53,7 @@ include { QUAST          } from '../subworkflows/local/quast'
 include { QUALIMAP       } from '../subworkflows/local/qualimap'
 include { FREEBAYES      } from '../subworkflows/local/freebayes'
 include { MAKE_MST       } from '../subworkflows/local/make_mst'
+include { PARSNP         } from '../subworkflows/local/parsnp'
 include { MAKE_REFERENCE } from '../subworkflows/local/make_reference'
 
 /*
@@ -137,27 +137,27 @@ workflow LEGIOCLUSTER {
     // Contains the reads, contigs, and filtered contigs
     // for each sample combined with each reference
     // selected by Mash FA or the manually-set reference.
-    TRIMMOMATIC.out.reads
-        .join(SPADES.out.contigs)
-        .join(SPADES.out.filtered_contigs)
-        .combine(
-            MASH_FA.out.fastas
-                .map {
-                    meta, fastas ->
-                    [ meta, meta.set_ref != '' ? [ meta.set_ref ] : fastas ]
-                }
-                .transpose(),
-            by: 0)
-        .map {
-            meta, reads, contigs, filtered_contigs, fasta ->
-            [ meta + [ref: fasta], reads, contigs, filtered_contigs ]
-        }
+    CHECK_INPUT.out.fasta
+        .join(CHECK_INPUT.out.bwa)
+        .join(CHECK_INPUT.out.fai)
         .cross(
-            CHECK_INPUT.out.fasta
-                .join(CHECK_INPUT.out.bwa)
-                .join(CHECK_INPUT.out.fai)
+            TRIMMOMATIC.out.reads
+                .join(SPADES.out.contigs)
+                .join(SPADES.out.filtered_contigs)
+                .combine(
+                    MASH_FA.out.fastas
+                        .map {
+                            meta, fastas ->
+                            [ meta, meta.set_ref != '' ? [ meta.set_ref ] : fastas ]
+                        }
+                        .transpose(),
+                    by: 0)
+                .map {
+                    meta, reads, contigs, filtered_contigs, fasta ->
+                    [ meta + [ref: fasta], reads, contigs, filtered_contigs ]
+                }
         ) { it[0].ref }
-        .map { it[0] + it[1][1..-1] }
+        .map { it[1] + it[0][1..-1] }
         .multiMap {
             meta, reads, contigs, filtered_contigs, fasta, bwa, fai ->
             reads:              [ meta, reads                                                                    ]
@@ -349,6 +349,46 @@ workflow LEGIOCLUSTER {
     MAKE_MST (
         ch_make_mst.cluster_pairwise_diffs,
         ch_make_mst.mutations_matrix
+    )
+
+    // Make Parsnp channel
+    // Contains the reference fasta and
+    // list of fastas in the cluster
+    // for each cluster that was changed
+    // and contains at least 3 isolates
+    ch_freebayes_close.filtered_contigs
+        .mix(CHECK_INPUT.out.cluster_fasta)
+        .map {
+            meta, fasta ->
+            [ [ref: meta.ref], fasta ]
+        }
+        .groupTuple()
+        .join(
+            ch_freebayes_close.fasta
+                .map {
+                    meta, fasta ->
+                    [ [ref: meta.ref], fasta ]
+                }
+        )
+        .branch {
+            meta, fastas, fasta ->
+            parsnp: fastas.size() > 1
+            skip: true
+        }
+        .set { ch_parsnp_branch }
+
+    ch_parsnp_branch.parsnp
+        .multiMap {
+            meta, fastas, fasta ->
+            fasta:  [ meta, fasta  ]
+            fastas: [ meta, fastas ]
+        }
+        .set { ch_parsnp }
+
+    // Run Parsnp
+    PARSNP (
+        ch_parsnp.fasta,
+        ch_parsnp.fastas
     )
 
     // Freebayes distant channel

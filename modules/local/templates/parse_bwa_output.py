@@ -6,11 +6,11 @@
 
 import csv
 import logging
+import numpy as np
 import platform
 import sys
 import yaml
 from pathlib import Path
-from statistics import fmean, median, pstdev
 
 
 logger = logging.getLogger()
@@ -41,9 +41,9 @@ def calculate_frag_len(sam_file, report_file):
     with open(report_file, 'a') as report:
         print('\\n\\nGenomic fragments:', file=report)
         print('Smallest fragment:\t', min(lo_frag_lens), file=report)
-        print('Mean length:\t\t', round(fmean(lo_frag_lens), 2), file=report)
-        print('S.D.:\t\t\t', round(pstdev(lo_frag_lens), 2), file=report)
-        print('median:\t\t', median(lo_frag_lens), file=report)
+        print('Mean length:\t\t', round(np.mean(lo_frag_lens), 2), file=report)
+        print('S.D.:\t\t\t', round(np.std(lo_frag_lens), 2), file=report)
+        print('median:\t\t', np.median(lo_frag_lens), file=report)
         print('Largest fragment:\t', max(lo_frag_lens), file=report)
 
 
