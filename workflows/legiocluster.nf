@@ -10,7 +10,7 @@ def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 WorkflowLegiocluster.initialise(params, log)
 
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.references, params.genomes_mash, params.illuminaclip, params.multiqc_config ]
+def checkPathParamList = [ params.input, params.references, params.genomes_mash, params.adapters, params.kraken_db, params.multiqc_config ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Create input and references channels
@@ -49,6 +49,7 @@ include { MASH_FQ        } from '../subworkflows/local/mash_fq'
 include { SPADES         } from '../subworkflows/local/spades'
 include { MASH_FA        } from '../subworkflows/local/mash_fa'
 include { BWA            } from '../subworkflows/local/bwa'
+include { KRAKEN         } from '../subworkflows/local/kraken'
 include { QUAST          } from '../subworkflows/local/quast'
 include { QUALIMAP       } from '../subworkflows/local/qualimap'
 include { FREEBAYES      } from '../subworkflows/local/freebayes'
@@ -232,6 +233,11 @@ workflow LEGIOCLUSTER {
             meta, percent_mapped, min_percent_mapped ->
             "[WARNING] There were only ${percent_mapped}% mapped reads, which is far too few."
         }
+
+    // Run Kraken
+    KRAKEN (
+        ch_bwa_out.contigs
+    )
 
     // Run Quast
     QUAST (
@@ -431,7 +437,7 @@ workflow LEGIOCLUSTER {
         .join(ch_freebayes_distant.filtered_contigs)
         .map {
             meta, passed_qc, fasta ->
-            [ [ref: meta.ref], fasta ]
+            [ [ref: meta.id], fasta ]
         }
         .set { ch_make_reference }
 

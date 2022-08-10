@@ -11,9 +11,9 @@ process SPADES {
     tuple val(meta), path(reads), val(max_read_len)
 
     output:
-    tuple val(meta), path('*_contigs.fasta'), emit: contigs
-    tuple val(meta), path('*.log')          , emit: log
-    path  "versions.yml"                    , emit: versions
+    tuple val(meta), path('*_contigs.fa'), emit: contigs
+    tuple val(meta), path('*.log')       , emit: log
+    path  "versions.yml"                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -34,7 +34,7 @@ process SPADES {
         $args
 
     mv spades.log ${prefix}.log
-    mv contigs.fasta ${prefix}_SPAdes_contigs.fasta
+    mv contigs.fasta ${prefix}_SPAdes_contigs.fa
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

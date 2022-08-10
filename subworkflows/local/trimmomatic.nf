@@ -23,7 +23,7 @@ workflow TRIMMOMATIC {
 
     TRIMMOMATIC_MODULE (
         REMOVE_POLY_GS.out.nog_reads,
-        Channel.fromPath(params.illuminaclip).first()
+        Channel.fromPath(params.adapters).first()
     )
 
     PARSE_TRIMMOMATIC_OUTPUT (

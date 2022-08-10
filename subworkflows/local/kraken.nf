@@ -1,44 +1,34 @@
-include { SPADES as SPADES_MODULE } from '../../modules/local/spades'
-include { FILTER_CONTIGS          } from '../../modules/local/filter_contigs'
-include { PARSE_SPADES_OUTPUT     } from '../../modules/local/parse_spades_output'
+include { KRAKEN as KRAKEN_MODULE } from '../../modules/local/kraken'
+include { PARSE_KRAKEN_OUTPUT     } from '../../modules/local/parse_kraken_output'
 
-workflow SPADES {
+workflow KRAKEN {
     take:
-    reads        // channel: [ val(meta), [ reads ] ]
-    max_read_len // channel: [ val(meta), val(max_read_len) ]
+    fasta // channel: [ meta(id, ref), fasta ]
 
     main:
     ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
-    SPADES_MODULE (
-        reads.join(max_read_len)
+    KRAKEN_MODULE (
+        fasta,
+        Channel.fromPath(params.kraken_db, type: 'dir').first()
     )
 
-    FILTER_CONTIGS (
-        SPADES_MODULE.out.contigs,
-        params.min_contig_len,
-        params.min_contig_cov
-    )
-
-    PARSE_SPADES_OUTPUT (
-        SPADES_MODULE.out.contigs,
-        params.min_contig_len,
-        params.min_contig_cov,
-        params.max_no_contigs
+    PARSE_KRAKEN_OUTPUT (
+        KRAKEN_MODULE.out.results.join(fasta),
+        params.genomes.get(params.genome).binomial.tokenize()[0]
     )
 
     // Collect reports
-    ch_reports = ch_reports.concat(PARSE_SPADES_OUTPUT.out.report)
+    ch_reports = ch_reports.concat(PARSE_KRAKEN_OUTPUT.out.report)
 
     // Collect versions
-    ch_versions = ch_versions.mix(SPADES_MODULE.out.versions)
-    ch_versions = ch_versions.mix(FILTER_CONTIGS.out.versions)
-    ch_versions = ch_versions.mix(PARSE_SPADES_OUTPUT.out.versions)
+    ch_versions = ch_versions.mix(KRAKEN_MODULE.out.versions)
+    ch_versions = ch_versions.mix(PARSE_KRAKEN_OUTPUT.out.versions)
 
     emit:
-    contigs = SPADES_MODULE.out.contigs
-    filtered_contigs = FILTER_CONTIGS.out.filtered_contigs
+    good_contigs = PARSE_KRAKEN_OUTPUT.out.good_contigs
+    bad_contigs = PARSE_KRAKEN_OUTPUT.out.bad_contigs
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

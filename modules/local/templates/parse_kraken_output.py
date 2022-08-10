@@ -201,8 +201,8 @@ def write_report(report_file, isolate, lo_lens, count, lo_failed_contigs):
     with open(report_file, 'a') as outfile:
         print('\\n\\nContigs overview:\\n(after Kraken species ID and removal'\
               + ' of questionable contigs)', file=outfile)
-        print('- Folder:                  {:21s}'.format(work_dir),
-              file=outfile)
+        # print('- Folder:                  {:21s}'.format(work_dir),
+              # file=outfile)
         print('- Isolate:                 {:21s}'.format(isolate),
               file=outfile)
         print('- Input contigs [n]:       {:12,d}'.format(count),
