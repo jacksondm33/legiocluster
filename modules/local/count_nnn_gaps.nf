@@ -31,7 +31,7 @@ process COUNT_NNN_GAPS {
     histo_depths = "${prefix}_histo_depths.png"
     plot_depths  = "${prefix}_plot_depths.png"
     output       = "${prefix}.csv"
-    report       = "${prefix}_report.txt"
+    report       = "${prefix}_nnn_gaps_report.txt"
     log_file     = "${prefix}.log"
 
     template 'count_nnn_gaps.py'

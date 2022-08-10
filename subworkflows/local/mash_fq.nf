@@ -36,7 +36,8 @@ workflow MASH_FQ {
                 })
             .collectFile(name: "species.csv", newLine: true, sort: true)
             .first(),
-        params.genome
+        params.genome,
+        'RvSp'
     )
 
     // Collect reports

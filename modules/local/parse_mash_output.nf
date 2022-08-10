@@ -11,6 +11,7 @@ process PARSE_MASH_OUTPUT {
     tuple val(meta), path(dist)
     path species
     val genome
+    val suffix
 
     output:
     tuple val(meta), path(fastas)  , emit: fastas
@@ -26,7 +27,7 @@ process PARSE_MASH_OUTPUT {
 
     log_level = "INFO"
     fastas    = "${prefix}_fastas.csv"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_mash_${suffix}_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_mash_output.py'

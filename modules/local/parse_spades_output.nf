@@ -35,7 +35,7 @@ process PARSE_SPADES_OUTPUT {
     contig_len_x_cov_dist = "${prefix}_Ampel_dist.png"
     contig_ind_len        = "${prefix}_plot_contig_len.png"
     contig_ind_cov        = "${prefix}_plot_contig_cov.png"
-    report                = "${prefix}_report.txt"
+    report                = "${prefix}_spades_report.txt"
     log_file              = "${prefix}.log"
 
     template 'parse_spades_output.py'

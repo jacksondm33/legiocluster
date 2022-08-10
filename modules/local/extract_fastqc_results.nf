@@ -22,7 +22,7 @@ process EXTRACT_FASTQC_RESULTS {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_fastqc_report.txt"
     log_file  = "${prefix}.log"
 
     template 'extract_fastqc_results.py'

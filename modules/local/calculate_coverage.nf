@@ -23,7 +23,7 @@ process CALCULATE_COVERAGE {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_coverage_report.txt"
     log_file  = "${prefix}.log"
 
     template 'calculate_coverage.py'

@@ -26,8 +26,7 @@ include { CREATE_SNP_CONS_FA          } from '../modules/local/create_snp_cons_f
 include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
 include { COMPARE_SNPS                } from '../modules/local/compare_snps'
 include { CHECK_REF_QUAL              } from '../modules/local/check_ref_qual'
-include { MAKE_REFERENCES             } from '../modules/local/make_references'
-include { CREATE_REPORT               } from '../modules/local/create_report'
+include { CONVERT_REPORTS             } from '../modules/local/convert_reports'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/local/custom_dumpsoftwareversions'
 include { MULTIQC                     } from '../modules/local/multiqc'
 
@@ -40,10 +39,12 @@ include { SPADES         } from '../subworkflows/local/spades'
 include { MASH_FA        } from '../subworkflows/local/mash_fa'
 include { BWA_FA         } from '../subworkflows/local/bwa_fa'
 include { BWA            } from '../subworkflows/local/bwa'
+include { KRAKEN         } from '../subworkflows/local/kraken'
 include { QUAST          } from '../subworkflows/local/quast'
 include { QUALIMAP       } from '../subworkflows/local/qualimap'
 include { FREEBAYES      } from '../subworkflows/local/freebayes'
 include { MAKE_MST       } from '../subworkflows/local/make_mst'
+include { PARSNP         } from '../subworkflows/local/parsnp'
 include { MAKE_REFERENCE } from '../subworkflows/local/make_reference'
 
 /*

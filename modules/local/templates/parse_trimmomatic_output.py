@@ -117,26 +117,26 @@ def parse_trimmomatic_output(trimlog_file, output_file, report_file, min_reads):
     # write data to report file
     with open(report_file, 'a') as report:
         print('Read pre-processing (Trimmomatic):', file=report)
-        print('Adapters removed, low quality (< Q20) regions removed, short reads (<100) removed, ploy-G (>25) removed', file=report)
-        print('Input read pairs:\t\t\t\t\t', int(input_read_pairs),\
+        print('Adapters removed, low quality (< Q20) regions removed, short reads (<100) removed, poly-G (>25) removed', file=report)
+        print('Input read pairs:\t', int(input_read_pairs),\
               sep='', file=report)
-        print('Both surviving:\t\t\t\t\t\t', both_surviving,\
+        print('Both surviving:\t', both_surviving,\
               ' (', round(both_surviving*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
-        print('Forward only surviving:\t\t\t\t\t', f_only_surviving,\
+        print('Forward only surviving:\t', f_only_surviving,\
               ' (', round(f_only_surviving*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
-        print('Reverse only surviving:\t\t\t\t\t', r_only_surviving, \
+        print('Reverse only surviving:\t', r_only_surviving, \
               ' (', round(r_only_surviving*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
-        print('Dropped read pairs:\t\t\t\t\t', dropped,\
+        print('Dropped read pairs:\t', dropped,\
               ' (', round(dropped*100/input_read_pairs, 2), '%)',\
               sep='', file=report)
-        print('Mean (SD) lengths of trimmed F reads:\t\t\t',\
+        print('Mean (SD) lengths of trimmed F reads:\t',\
               round(np.mean(lo_f_length_distr), 2), \
               ' (', round(np.std(lo_f_length_distr), 3), ')',\
               sep='', file=report)
-        print('Mean (SD) lengths of trimmed R reads:\t\t\t',\
+        print('Mean (SD) lengths of trimmed R reads:\t',\
               round(np.mean(lo_r_length_distr), 2),\
               ' (', round(np.std(lo_r_length_distr), 3), ')',\
               sep='', file=report)

@@ -25,7 +25,7 @@ process PARSE_TRIMMOMATIC_OUTPUT {
 
     log_level = "INFO"
     output    = "${prefix}.csv"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_trimmomatic_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_trimmomatic_output.py'

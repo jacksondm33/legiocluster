@@ -1,6 +1,6 @@
-process PARSE_QUALIMAP_OUTPUT {
+process CONVERT_REPORTS {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_low'
 
     conda (params.enable_conda ? 'bioconda::python=3.10' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -8,12 +8,12 @@ process PARSE_QUALIMAP_OUTPUT {
         'python-legiocluster:latest' }"
 
     input:
-    tuple val(meta), path(qualimap)
+    tuple val(meta), path(reports)
 
     output:
-    tuple val(meta), path(report)  , emit: report
-    tuple val(meta), path(log_file), emit: log
-    path  "versions.yml"           , emit: versions
+    tuple val(meta), path("${prefix}_*.html"), emit: html
+    tuple val(meta), path(log_file)          , emit: log
+    path  "versions.yml"                     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,9 +21,8 @@ process PARSE_QUALIMAP_OUTPUT {
     script:
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    log_level = "INFO"
-    report    = "${prefix}_qualimap_report.txt"
-    log_file  = "${prefix}.log"
+    log_level    = "INFO"
+    log_file     = "${prefix}.log"
 
-    template 'parse_qualimap_output.py'
+    template 'convert_reports.py'
 }

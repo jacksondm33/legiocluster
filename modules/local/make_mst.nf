@@ -26,7 +26,7 @@ process MAKE_MST {
 
     log_level = "INFO"
     mst       = "${prefix}_MST_${abr}.png"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_mst_report.txt"
     log_file  = "${prefix}.log"
 
     template 'make_mst.py'

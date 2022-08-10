@@ -24,8 +24,7 @@ ch_genomes_mash = Channel.fromPath(params.genomes_mash)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-ch_multiqc_config        = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
-ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config) : Channel.empty()
+ch_multiqc_config = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -37,7 +36,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
 include { COMPARE_SNPS                } from '../modules/local/compare_snps'
 include { CHECK_REF_QUAL              } from '../modules/local/check_ref_qual'
-include { CREATE_REPORT               } from '../modules/local/create_report'
+include { CONVERT_REPORTS             } from '../modules/local/convert_reports'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/local/custom_dumpsoftwareversions'
 include { MULTIQC                     } from '../modules/local/multiqc'
 
@@ -506,18 +505,16 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(QUAST.out.reports)
     ch_reports = ch_reports.concat(QUALIMAP.out.reports)
     ch_reports = ch_reports.concat(FREEBAYES.out.reports)
-    ch_reports = ch_reports.concat(MAKE_MST.out.reports)
+    // ch_reports = ch_reports.concat(MAKE_MST.out.reports)
 
-    // Create report
-    CREATE_REPORT (
+    // Convert reports
+    CONVERT_REPORTS (
         ch_reports
             .map {
                 meta, report ->
-                [ meta - [ref: meta.ref], report ]
+                [ [id: meta.id], report ]
             }
             .groupTuple()
-            .join(CHECK_INPUT.out.reads),
-        params.genome
     )
 
     // Collect versions
@@ -542,10 +539,10 @@ workflow LEGIOCLUSTER {
     ch_workflow_summary = Channel.value(workflow_summary)
 
     ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.results.collect { it[1] }.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(CONVERT_REPORTS.out.html.collect { it[1] }.ifEmpty([]))
 
     MULTIQC (
         ch_multiqc_files.collect()

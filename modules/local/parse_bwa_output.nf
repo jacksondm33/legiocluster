@@ -24,7 +24,7 @@ process PARSE_BWA_OUTPUT {
 
     log_level = "INFO"
     output    = "${prefix}.csv"
-    report    = "${prefix}_report.txt"
+    report    = "${prefix}_bwa_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_bwa_output.py'
