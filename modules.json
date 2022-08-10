@@ -2,13 +2,6 @@
     "name": "nf-core/legiocluster",
     "homePage": "https://github.com/nf-core/legiocluster",
     "repos": {
-        "nf-core/modules": {
-            "custom/dumpsoftwareversions": {
-                "git_sha": "e745e167c1020928ef20ea1397b6b4d230681b4d"
-            },
-            "multiqc": {
-                "git_sha": "e745e167c1020928ef20ea1397b6b4d230681b4d"
-            }
-        }
+        "nf-core/modules": {}
     }
 }
