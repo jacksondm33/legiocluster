@@ -12,9 +12,12 @@ report_section_order:
 run_modules:
   - custom_content
 
+extra_fn_clean_exts:
+  - type: regex_keep
+    pattern: "^[^.]*"
+
 custom_data:
   trimmomatic_report:
-    id: "trimmomatic_report"
     section_name: "Read pre-processing (Trimmomatic)"
     description: "Adapters removed, low quality (< Q20) regions removed, short reads (<100) removed, ploy-G (>25) removed\n(*) if trimmed read length > 0"
     plot_type: "html"

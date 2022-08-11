@@ -1,5 +1,5 @@
-process CREATE_SNP_CONS {
-    tag "$meta.id"
+process MAKE_SNP_CONS_FA {
+    tag "$meta.ref"
     label 'process_medium'
 
     conda (params.enable_conda ? 'bioconda::python=3.10' : null)
@@ -8,10 +8,9 @@ process CREATE_SNP_CONS {
         'python-legiocluster:latest' }"
 
     input:
-    tuple val(meta), path(fasta), path(mpileup), path(freebayes)
+    tuple val(meta), path(fasta)
 
     output:
-    tuple val(meta), path(csv)     , emit: csv
     tuple val(meta), path(snp_cons), emit: snp_cons
     tuple val(meta), path(log_file), emit: log
     path  "versions.yml"           , emit: versions
@@ -20,12 +19,11 @@ process CREATE_SNP_CONS {
     task.ext.when == null || task.ext.when
 
     script:
-    prefix = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.ref}"
 
     log_level = "INFO"
-    csv       = "${prefix}.csv"
-    snp_cons  = "${prefix}_SNP_cons.txt"
+    snp_cons  = "${prefix}.SNP_cons.txt"
     log_file  = "${prefix}.log"
 
-    template 'create_snp_cons.py'
+    template 'make_snp_cons_fa.py'
 }

@@ -11,22 +11,18 @@ process SAMTOOLS_FAIDX {
     tuple val(meta), path(fasta)
 
     output:
-    tuple val(meta), path("*.fai"), emit: fai
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path("${fasta.name}.fai"), emit: fai
+    path  "versions.yml"                      , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.ref}"
+    args = task.ext.args ?: ''
     """
-    samtools \\
-        faidx \\
+    samtools faidx \\
         $args \\
-        $fasta \\
-        > ${prefix}.log
+        $fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

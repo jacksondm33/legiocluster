@@ -118,4 +118,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(remove_poly_gs("$reads".split(), "$nog_reads".split(), int("$xg")))
+    sys.exit(remove_poly_gs("$reads".split(), "$no_poly_gs_reads".split(), int("$xg")))

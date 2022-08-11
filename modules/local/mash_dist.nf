@@ -9,22 +9,21 @@ process MASH_DIST {
 
     input:
     tuple val(meta), path(query), path(reference)
-    val suffix
 
     output:
-    tuple val(meta), path("*.tab"), emit: dist
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output), emit: dist
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_distances_${suffix}.tab"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    suffix = task.ext.suffix ?: 'mash_dist'
+    output = "${prefix}.${suffix}.tab"
     """
-    mash \\
-        dist \\
+    mash dist \\
         -p $task.cpus \\
         $args \\
         $reference \\

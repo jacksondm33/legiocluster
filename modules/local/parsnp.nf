@@ -11,27 +11,25 @@ process PARSNP {
     tuple val(meta), path(fasta), path(fastas)
 
     output:
-    tuple val(meta), path(output) , emit: tree
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output), emit: parsnp
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.ref}"
-    output = "${prefix}_parsnp.tree"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.ref}"
+    output = "${prefix}.parsnp.tree"
     """
     parsnp \\
         -p $task.cpus \\
         -o $prefix \\
         -d $fasta $fastas \\
         -r $fasta \\
-        $args \\
-        > ${prefix}.log
+        $args
 
-    mv ${prefix}/parsnp.tree $output
+    cp ${prefix}/parsnp.tree $output
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

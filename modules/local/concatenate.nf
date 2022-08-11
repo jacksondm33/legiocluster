@@ -8,7 +8,7 @@ process CONCATENATE {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path(files)
+    tuple val(meta), path(reads)
 
     output:
     tuple val(meta), path(output), emit: cat
@@ -19,13 +19,11 @@ process CONCATENATE {
     script:
     args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
-
-    output = "${prefix}_cat.fastq"
-
+    output = "${prefix}.cat.fastq"
     """
     cat \\
         $args \\
-        $files \\
+        $reads \\
         > $output
     """
 }

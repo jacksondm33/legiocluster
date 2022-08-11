@@ -23,7 +23,7 @@ process PARSE_QUAST_OUTPUT {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_quast_report.txt"
+    report    = "${prefix}.quast_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_quast_output.py'

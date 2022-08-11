@@ -11,29 +11,31 @@ process FASTQC {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("*_fastqc", type: 'dir')                  , emit: results
-    tuple val(meta), path("${prefix}_per_base_quality_[12].png")    , emit: per_base_quality
-    tuple val(meta), path("${prefix}_per_sequence_quality_[12].png"), emit: per_sequence_quality
-    tuple val(meta), path("*.log")                                  , emit: log
+    tuple val(meta), path("${prefix}.fastqc_[12]", type: 'dir')     , emit: fastqc
+    tuple val(meta), path("${prefix}.per_base_quality_[12].png")    , emit: per_base_quality
+    tuple val(meta), path("${prefix}.per_sequence_quality_[12].png"), emit: per_sequence_quality
     path  "versions.yml"                                            , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
     fastqc \\
         --threads $task.cpus \\
+        --extract \\
         $args \\
-        $reads \\
-        > ${prefix}.log
+        $reads
 
-    cp ${reads[0].baseName}_fastqc/Images/per_base_quality.png ${prefix}_per_base_quality_1.png
-    cp ${reads[1].baseName}_fastqc/Images/per_base_quality.png ${prefix}_per_base_quality_2.png
-    cp ${reads[0].baseName}_fastqc/Images/per_sequence_quality.png ${prefix}_per_sequence_quality_1.png
-    cp ${reads[1].baseName}_fastqc/Images/per_sequence_quality.png ${prefix}_per_sequence_quality_2.png
+    mv ${reads[0].baseName}_fastqc ${prefix}.fastqc_1
+    mv ${reads[1].baseName}_fastqc ${prefix}.fastqc_2
+
+    cp ${prefix}.fastqc_1/Images/per_base_quality.png ${prefix}.per_base_quality_1.png
+    cp ${prefix}.fastqc_2/Images/per_base_quality.png ${prefix}.per_base_quality_2.png
+    cp ${prefix}.fastqc_1/Images/per_sequence_quality.png ${prefix}.per_sequence_quality_1.png
+    cp ${prefix}.fastqc_2/Images/per_sequence_quality.png ${prefix}.per_sequence_quality_2.png
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

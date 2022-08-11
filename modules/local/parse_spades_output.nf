@@ -30,12 +30,12 @@ process PARSE_SPADES_OUTPUT {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level             = "INFO"
-    contig_len_dist       = "${prefix}_contig_len_dist.png"
-    contig_cov_dist       = "${prefix}_contig_cov_dist.png"
-    contig_len_x_cov_dist = "${prefix}_Ampel_dist.png"
-    contig_ind_len        = "${prefix}_plot_contig_len.png"
-    contig_ind_cov        = "${prefix}_plot_contig_cov.png"
-    report                = "${prefix}_spades_report.txt"
+    contig_len_dist       = "${prefix}.contig_len_dist.png"
+    contig_cov_dist       = "${prefix}.contig_cov_dist.png"
+    contig_len_x_cov_dist = "${prefix}.Ampel_dist.png"
+    contig_ind_len        = "${prefix}.plot_contig_len.png"
+    contig_ind_cov        = "${prefix}.plot_contig_cov.png"
+    report                = "${prefix}.spades_report.txt"
     log_file              = "${prefix}.log"
 
     template 'parse_spades_output.py'

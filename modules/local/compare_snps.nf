@@ -22,7 +22,7 @@ process COMPARE_SNPS {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level      = "INFO"
-    pairwise_diffs = "${prefix}_pairwise_diffs.csv"
+    pairwise_diffs = "${prefix}.pairwise_diffs.csv"
     log_file       = "${prefix}.log"
 
     template 'compare_snps.py'

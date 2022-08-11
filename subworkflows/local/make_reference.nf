@@ -1,14 +1,13 @@
-include { BWA_INDEX          } from '../../modules/local/bwa_index'
-include { SAMTOOLS_FAIDX     } from '../../modules/local/samtools_faidx'
-include { CREATE_SNP_CONS_FA } from '../../modules/local/create_snp_cons_fa'
-include { TOUCH              } from '../../modules/local/touch'
+include { BWA_INDEX        } from '../../modules/local/bwa_index'
+include { SAMTOOLS_FAIDX   } from '../../modules/local/samtools_faidx'
+include { MAKE_SNP_CONS_FA } from '../../modules/local/make_snp_cons_fa'
+include { TOUCH            } from '../../modules/local/touch'
 
 workflow MAKE_REFERENCE {
     take:
     fasta // channel: [ meta(ref), fasta ]
 
     main:
-    ch_reports = Channel.empty()
     ch_versions = Channel.empty()
 
     // Run bwa index
@@ -21,8 +20,8 @@ workflow MAKE_REFERENCE {
         fasta
     )
 
-    // Create SNP consensus (fasta)
-    CREATE_SNP_CONS_FA (
+    // Make SNP consensus (fasta)
+    MAKE_SNP_CONS_FA (
         fasta
     )
 
@@ -34,12 +33,16 @@ workflow MAKE_REFERENCE {
             }
     )
 
+    // Collect versions
+    ch_versions = ch_versions.mix(BWA_INDEX.out.versions)
+    ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
+    ch_versions = ch_versions.mix(MAKE_SNP_CONS_FA.out.versions)
+
     emit:
     fasta = fasta
-    bwa = BWA_INDEX.out.index
+    bwa = BWA_INDEX.out.bwa
     fai = SAMTOOLS_FAIDX.out.fai
-    snp_cons = CREATE_SNP_CONS_FA.out.snp_cons
+    snp_cons = MAKE_SNP_CONS_FA.out.snp_cons
     mutations_matrix = TOUCH.out.touch
-    reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

@@ -11,21 +11,22 @@ process FREEBAYES {
     tuple val(meta), path(bam), path(fasta), path(fai)
 
     output:
-    tuple val(meta), path("*_freebayes_all.vcf"), emit: vcf
-    path  "versions.yml"                        , emit: versions
+    tuple val(meta), path(output), emit: vcf
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}.freebayes_all.vcf"
     """
     freebayes \\
         -f $fasta \\
         $args \\
         $bam \\
-        > ${prefix}_freebayes_all.vcf
+        > $output
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

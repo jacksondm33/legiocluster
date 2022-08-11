@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-"""Extract fastqc results."""
+"""Parse FastQC output."""
 
 
 import logging
@@ -14,7 +14,7 @@ from pathlib import Path
 logger = logging.getLogger()
 
 
-def extract_fastqc_results(lo_reads_files, lo_fastqc_results, report_file):
+def parse_fastqc_output(lo_reads_files, lo_fastqc_results, report_file):
     """
     Extracts basic statistics and summary results from the 'fastqc_data.txt'
       and 'summary.txt' files and writes them to the report.
@@ -65,4 +65,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(extract_fastqc_results("$reads".split(), "$fastqc_results".split(), "$report"))
+    sys.exit(parse_fastqc_output("$reads".split(), "$fastqc".split(), "$report"))

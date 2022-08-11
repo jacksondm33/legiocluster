@@ -4,13 +4,13 @@ include { COUNT_NNN_GAPS        } from '../../modules/local/count_nnn_gaps'
 
 workflow QUAST {
     take:
-    contigs  // channel: [ val(meta), [ raw_reads ] ]
-    fasta    // channel: [ val(meta), [ proc_reads ] ]
-    depth
-    percent_mapped
-    max_no_ns
-    max_no_gaps
-    mapped_threshold
+    contigs          // channel: [ meta(id, ref), contigs          ]
+    fasta            // channel: [ meta(id, ref), fasta            ]
+    depth            // channel: [ meta(id, ref), depth            ]
+    percent_mapped   // channel: [ meta(id, ref), percent_mapped   ]
+    max_no_ns        // channel: [ meta(id, ref), max_no_ns        ]
+    max_no_gaps      // channel: [ meta(id, ref), max_no_gaps      ]
+    mapped_threshold // channel: [ meta(id, ref), mapped_threshold ]
 
     main:
     ch_reports = Channel.empty()

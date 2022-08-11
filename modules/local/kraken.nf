@@ -12,29 +12,29 @@ process KRAKEN {
     path db
 
     output:
-    tuple val(meta), path(output), emit: results
+    tuple val(meta), path(output), emit: kraken
     path "versions.yml"          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def args2 = task.ext.args2 ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    output = "${prefix}_kraken_res.txt"
+    args = task.ext.args ?: ''
+    args2 = task.ext.args2 ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}.kraken_res.txt"
     """
     kraken \\
         --threads $task.cpus \\
         --db $db \\
-        --output ${prefix}_kraken_out.txt \\
+        --output ${prefix}.kraken_out.txt \\
         $args \\
         $fasta
 
     kraken-translate \\
         --db $db \\
         $args2 \\
-        ${prefix}_kraken_out.txt \\
+        ${prefix}.kraken_out.txt \\
         > $output
 
     cat <<-END_VERSIONS > versions.yml

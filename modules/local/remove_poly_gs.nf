@@ -12,9 +12,9 @@ process REMOVE_POLY_GS {
     val xg
 
     output:
-    tuple val(meta), path("${prefix}_nog_[12].fastq"), emit: nog_reads
-    tuple val(meta), path(log_file)                  , emit: log
-    path  "versions.yml"                             , emit: versions
+    tuple val(meta), path("${prefix}.no_poly_gs_[12].fastq"), emit: no_poly_gs_reads
+    tuple val(meta), path(log_file)                         , emit: log
+    path  "versions.yml"                                    , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -22,9 +22,9 @@ process REMOVE_POLY_GS {
     script:
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    log_level = "INFO"
-    nog_reads = "${prefix}_nog_1.fastq ${prefix}_nog_2.fastq"
-    log_file  = "${prefix}.log"
+    log_level        = "INFO"
+    no_poly_gs_reads = "${prefix}.no_poly_gs_1.fastq ${prefix}.no_poly_gs_2.fastq"
+    log_file         = "${prefix}.log"
 
     template 'remove_poly_gs.py'
 }

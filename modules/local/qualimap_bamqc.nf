@@ -11,27 +11,25 @@ process QUALIMAP_BAMQC {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("${prefix}")     , emit: results
-    tuple val(meta), path("*_qualimap.txt"), emit: report
-    path  "versions.yml"                   , emit: versions
+    tuple val(meta), path(output, type: 'dir')     , emit: qualimap
+    tuple val(meta), path("${prefix}.qualimap.txt"), emit: report
+    path  "versions.yml"                           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def memory = task.memory.toGiga() + "G"
+    args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}"
     """
-    qualimap \\
-        --java-mem-size=$memory \\
-        bamqc \\
+    qualimap bamqc \\
         -nt $task.cpus \\
         -bam $bam \\
-        -outdir $prefix \\
+        -outdir $output \\
         $args
 
-    ln -s ${prefix}/genome_results.txt ${prefix}_qualimap.txt
+    cp ${output}/genome_results.txt ${prefix}.qualimap.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

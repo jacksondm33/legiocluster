@@ -103,4 +103,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(calculate_coverage("$reads", "$fastqc_results", "$report", int("$med_genome_len")))
+    sys.exit(calculate_coverage("$reads", "$fastqc", "$report", int("$med_genome_len")))

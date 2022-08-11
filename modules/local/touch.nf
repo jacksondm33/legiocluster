@@ -8,7 +8,7 @@ process TOUCH {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), val(suffix)
+    tuple val(meta), val(name)
 
     output:
     tuple val(meta), path(output), emit: touch
@@ -19,9 +19,7 @@ process TOUCH {
     script:
     args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.ref}"
-
-    output = "${prefix}_${suffix}"
-
+    output = "${prefix}.${name}"
     """
     touch \\
         $args \\

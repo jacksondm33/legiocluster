@@ -22,7 +22,7 @@ workflow TRIMMOMATIC {
     )
 
     TRIMMOMATIC_MODULE (
-        REMOVE_POLY_GS.out.nog_reads,
+        REMOVE_POLY_GS.out.no_poly_gs_reads,
         Channel.fromPath(params.adapters).first()
     )
 
@@ -41,33 +41,40 @@ workflow TRIMMOMATIC {
             both_surviving: [ meta, both_surviving[0].toInteger() ]
             max_read_len: [ meta, max_read_len[0].toInteger() ]
         }
-        .set { ch_output }
+        .set { ch_trimmomatic_output }
 
-    TRIMMOMATIC_MODULE.out.trimmed_reads
-        .join(ch_output.both_surviving)
+    TRIMMOMATIC_MODULE.out.paired_reads
+        .join(ch_trimmomatic_output.both_surviving)
         .branch {
             meta, reads, both_surviving ->
             reduce: both_surviving > params.read_cutoff
             skip: true
         }
-        .set { ch_reduce }
+        .set { ch_reduce_reads }
 
     REDUCE_READS (
-        ch_reduce.reduce
+        ch_reduce_reads.reduce
             .map {
                 meta, reads, both_surviving ->
                 [ meta, reads ]
             },
-        true,
+        params.random,
         params.read_cutoff
     )
 
-    ch_reduce.skip
+    ch_reduce_reads.skip
         .map {
             meta, reads, both_surviving ->
             [ meta, reads ]
         }
-        .set { ch_skipped_reads }
+        .mix(REDUCE_READS.out.reduced_reads)
+        .join(ch_trimmomatic_output.max_read_len)
+        .multiMap {
+            meta, reads, max_read_len ->
+            reads:        [ meta, reads        ]
+            max_read_len: [ meta, max_read_len ]
+        }
+        .set { ch_output }
 
     // Collect reports
     ch_reports = ch_reports.concat(PARSE_TRIMMOMATIC_OUTPUT.out.report)
@@ -80,7 +87,7 @@ workflow TRIMMOMATIC {
     ch_versions = ch_versions.mix(REDUCE_READS.out.versions)
 
     emit:
-    reads = REDUCE_READS.out.reduced_reads.mix(ch_skipped_reads)
+    reads = ch_output.reads
     max_read_len = ch_output.max_read_len
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]

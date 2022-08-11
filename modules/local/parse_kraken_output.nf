@@ -26,8 +26,8 @@ process PARSE_KRAKEN_OUTPUT {
 
     log_level    = "INFO"
     good_contigs = "${prefix}_cc.fasta"
-    bad_contigs  = "${prefix}_wrong_genus_contigs.fasta"
-    report       = "${prefix}_kraken_report.txt"
+    bad_contigs  = "${prefix}.wrong_genus_contigs.fasta"
+    report       = "${prefix}.kraken_report.txt"
     log_file     = "${prefix}.log"
 
     template 'parse_kraken_output.py'

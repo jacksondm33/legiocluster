@@ -13,7 +13,7 @@ process REDUCE_READS {
     val k
 
     output:
-    tuple val(meta), path("${prefix}_reduced_[12].fastq"), emit: reduced_reads
+    tuple val(meta), path("${prefix}.reduced_[12].fastq"), emit: reduced_reads
     tuple val(meta), path(log_file)                      , emit: log
     path  "versions.yml"                                 , emit: versions
 
@@ -24,7 +24,7 @@ process REDUCE_READS {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level     = "INFO"
-    reduced_reads = "${prefix}_reduced_1.fastq ${prefix}_reduced_2.fastq"
+    reduced_reads = "${prefix}.reduced_1.fastq ${prefix}.reduced_2.fastq"
     log_file      = "${prefix}.log"
 
     template 'reduce_reads.py'

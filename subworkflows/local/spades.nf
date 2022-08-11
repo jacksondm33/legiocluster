@@ -4,8 +4,8 @@ include { PARSE_SPADES_OUTPUT     } from '../../modules/local/parse_spades_outpu
 
 workflow SPADES {
     take:
-    reads        // channel: [ val(meta), [ reads ] ]
-    max_read_len // channel: [ val(meta), val(max_read_len) ]
+    reads        // channel: [ meta(id), [ reads ]    ]
+    max_read_len // channel: [ meta(id), max_read_len ]
 
     main:
     ch_reports = Channel.empty()

@@ -9,37 +9,33 @@ process MASH_SKETCH {
 
     input:
     tuple val(meta), path(reads)
-    val suffix
 
     output:
-    tuple val(meta), path("*.msh"), emit: mash
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output)  , emit: mash
+    tuple val(meta), path(log_file), emit: log
+    path  "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def output = "${prefix}_${suffix}.msh"
-    def add_params =
-        suffix == 'ref_RvSp'   ? '-k 16 -s 400'      :
-        suffix == 'comb_reads' ? '-m 2 -k 16 -s 400' :
-        ''
+    args = task.ext.args ?: ''
+    args2 = task.ext.args2 ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    suffix = task.ext.suffix ?: 'mash_sketch'
+    output = "${prefix}.${suffix}.msh"
+    log_file = "${prefix}.${suffix}.log"
     """
-    mash \\
-        sketch \\
+    mash sketch \\
         -o $output \\
-        $add_params \\
         $args \\
         $reads \\
-        > ${prefix}.log
+        > $log_file
 
-    mash \\
-        info \\
+    mash info \\
+        $args2 \\
         $output \\
-        >> ${prefix}.log
+        >> $log_file
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

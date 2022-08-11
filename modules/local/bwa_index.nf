@@ -11,24 +11,22 @@ process BWA_INDEX {
     tuple val(meta), path(fasta)
 
     output:
-    tuple val(meta), path("bwa")  , emit: index
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output, type: 'dir'), emit: bwa
+    path  "versions.yml"                      , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.ref}"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.ref}"
+    output = "${prefix}"
     """
-    mkdir bwa
-    bwa \\
-        index \\
-        -p bwa/${prefix} \\
+    mkdir $output
+    bwa index \\
+        -p ${output}/${prefix} \\
         $args \\
-        $fasta \\
-        > ${prefix}.log
+        $fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

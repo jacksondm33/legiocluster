@@ -228,7 +228,7 @@ def finish_draw_graph(graph_object, reference, color):
     return graph_object
 
 
-def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, genome, reference):
+def make_mst(concat_pairwise_diffs_file, mst_file, report_file, genome, suffix, reference):
     """
     main function
     param: str isolate = name of the bacterial isolate, user supplied
@@ -236,7 +236,7 @@ def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, genome, ref
     param: list lo_concat_pairwise_diffs = differences (mutation events or
            SNPs) between isolate pairs in the same cluster
     param: str FILE_NAME = file name, 'MST_ME.png' or 'MST_SNP.png'
-    param: str ABR = 'ME' or 'SNP'
+    param: str suffix = 'ME' or 'SNP'
     """
 
     lo_concat_pairwise_diffs = []
@@ -277,13 +277,13 @@ def make_mst(concat_pairwise_diffs_file, mst_file, report_file, abr, genome, ref
 
     # save the drawn graph_object to file
     graph_drawing.write_png(mst_file)
-    logger.info('## write_png() completed for', abr)
+    logger.info('## write_png() completed for', suffix)
 
     # write note to report file
     with open(report_file, 'a') as report_file:
-        print('\\nFigure: Minimum Spanning tree (' + abr + ')\\n', file=report_file)
+        print('\\nFigure: Minimum Spanning tree (' + suffix + ')\\n', file=report_file)
 
-    logger.info('## Added a Minimum Spanning Tree (' + abr + ').')
+    logger.info('## Added a Minimum Spanning Tree (' + suffix + ').')
 
 
 if __name__ == "__main__":
@@ -297,4 +297,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$report", "$abr", "$genome", "$meta.ref"))
+    sys.exit(make_mst("$concat_pairwise_diffs", "$mst", "$report", "$genome", "$suffix", "$meta.ref"))

@@ -25,7 +25,7 @@ process CHECK_REF_QUAL {
 
     log_level = "INFO"
     output    = "${prefix}.csv"
-    report    = "${prefix}_ref_qual_report.txt"
+    report    = "${prefix}.ref_qual_report.txt"
     log_file  = "${prefix}.log"
 
     template 'check_ref_qual.py'

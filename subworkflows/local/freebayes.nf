@@ -27,7 +27,8 @@ workflow FREEBAYES {
                     .map {
                         meta, depth_mean, depth_sd ->
                         [ meta, depth_mean + 3 * depth_sd ]
-                    }),
+                    }
+            ),
         params.qual_threshold,
         params.dp_min,
         params.qa_threshold,

@@ -11,27 +11,22 @@ process PICARD_MARKDUPLICATES {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("*_marked.bam") , emit: bam
-    tuple val(meta), path("*_metrics.txt"), emit: metrics
-    tuple val(meta), path("*.log")        , emit: log
-    path  "versions.yml"                  , emit: versions
+    tuple val(meta), path("${prefix}.marked.bam") , emit: marked_bam
+    tuple val(meta), path("${prefix}.metrics.txt"), emit: metrics
+    path  "versions.yml"                          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}_${meta.ref}"
-    def maxmem = task.memory.toGiga()
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}.${meta.ref}"
     """
-    picard \\
-        -Xmx${maxmem}g \\
-        MarkDuplicates \\
+    picard MarkDuplicates \\
         $args \\
         I=$bam \\
-        O=${prefix}_marked.bam \\
-        M=${prefix}_metrics.txt \\
-        > ${prefix}.log
+        O=${prefix}.marked.bam \\
+        M=${prefix}.metrics.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

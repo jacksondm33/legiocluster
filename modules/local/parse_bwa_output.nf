@@ -20,11 +20,11 @@ process PARSE_BWA_OUTPUT {
     task.ext.when == null || task.ext.when
 
     script:
-    prefix = task.ext.prefix ?: "${meta.id}_${meta.ref}"
+    prefix = task.ext.prefix ?: "${meta.id}.${meta.ref}"
 
     log_level = "INFO"
     output    = "${prefix}.csv"
-    report    = "${prefix}_bwa_report.txt"
+    report    = "${prefix}.bwa_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_bwa_output.py'

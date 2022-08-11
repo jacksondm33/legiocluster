@@ -5,8 +5,8 @@ include { REMOVE_INNER_LABELS     } from '../../modules/local/remove_inner_label
 
 workflow PARSNP {
     take:
-    fasta
-    fastas
+    fasta  // channel: [ meta(ref), fasta      ]
+    fastas // channel: [ meta(ref), [ fastas ] ]
 
     main:
     ch_reports = Channel.empty()
@@ -17,11 +17,11 @@ workflow PARSNP {
     )
 
     PARSE_PARSNP_OUTPUT (
-        PARSNP_MODULE.out.tree
+        PARSNP_MODULE.out.parsnp
     )
 
     NW_DISPLAY (
-        PARSNP_MODULE.out.tree
+        PARSNP_MODULE.out.parsnp
     )
 
     REMOVE_INNER_LABELS (
@@ -38,8 +38,8 @@ workflow PARSNP {
     ch_versions = ch_versions.mix(REMOVE_INNER_LABELS.out.versions)
 
     emit:
-    parsnp = PARSNP_MODULE.out.tree
-    svg = REMOVE_INNER_LABELS.out.no_labels_svg
+    parsnp = PARSNP_MODULE.out.parsnp
+    svg = REMOVE_INNER_LABELS.out.no_inner_labels_svg
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

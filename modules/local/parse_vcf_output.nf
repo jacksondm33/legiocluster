@@ -24,9 +24,9 @@ process PARSE_VCF_OUTPUT {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level     = "INFO"
-    mutation_dist = "${prefix}_mutation_dist.png"
+    mutation_dist = "${prefix}.mutation_dist.png"
     output        = "${prefix}.csv"
-    report        = "${prefix}_vcf_report.txt"
+    report        = "${prefix}.vcf_report.txt"
     log_file      = "${prefix}.log"
 
     template 'parse_vcf_output.py'

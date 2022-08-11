@@ -28,10 +28,10 @@ process COUNT_NNN_GAPS {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level    = "INFO"
-    histo_depths = "${prefix}_histo_depths.png"
-    plot_depths  = "${prefix}_plot_depths.png"
+    histo_depths = "${prefix}.histo_depths.png"
+    plot_depths  = "${prefix}.plot_depths.png"
     output       = "${prefix}.csv"
-    report       = "${prefix}_nnn_gaps_report.txt"
+    report       = "${prefix}.nnn_gaps_report.txt"
     log_file     = "${prefix}.log"
 
     template 'count_nnn_gaps.py'

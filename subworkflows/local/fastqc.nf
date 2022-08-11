@@ -1,5 +1,5 @@
 include { FASTQC as FASTQC_MODULE } from '../../modules/local/fastqc'
-include { EXTRACT_FASTQC_RESULTS  } from '../../modules/local/extract_fastqc_results'
+include { PARSE_FASTQC_OUTPUT     } from '../../modules/local/parse_fastqc_output'
 include { CALCULATE_COVERAGE      } from '../../modules/local/calculate_coverage'
 
 workflow FASTQC {
@@ -15,31 +15,31 @@ workflow FASTQC {
         proc_reads
     )
 
-    EXTRACT_FASTQC_RESULTS (
-        FASTQC_MODULE.out.results.join(raw_reads)
+    PARSE_FASTQC_OUTPUT (
+        FASTQC_MODULE.out.fastqc.join(raw_reads)
     )
 
     CALCULATE_COVERAGE (
         proc_reads
-            .join(FASTQC_MODULE.out.results)
+            .join(FASTQC_MODULE.out.fastqc)
             .map {
-                meta, reads, fastqc_results ->
-                [ meta, reads[1], fastqc_results[1] ]
+                meta, reads, fastqc ->
+                [ meta, reads[1], fastqc[1] ]
             },
         params.med_genome_len
     )
 
     // Collect reports
-    ch_reports = ch_reports.concat(EXTRACT_FASTQC_RESULTS.out.report)
+    ch_reports = ch_reports.concat(PARSE_FASTQC_OUTPUT.out.report)
     ch_reports = ch_reports.concat(CALCULATE_COVERAGE.out.report)
 
     // Collect versions
     ch_versions = ch_versions.mix(FASTQC_MODULE.out.versions)
-    ch_versions = ch_versions.mix(EXTRACT_FASTQC_RESULTS.out.versions)
+    ch_versions = ch_versions.mix(PARSE_FASTQC_OUTPUT.out.versions)
     ch_versions = ch_versions.mix(CALCULATE_COVERAGE.out.versions)
 
     emit:
-    results = FASTQC_MODULE.out.results
+    fastqc = FASTQC_MODULE.out.fastqc
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]
 }

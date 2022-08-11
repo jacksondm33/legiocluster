@@ -15,21 +15,22 @@ process VCFFILTER {
     val ao_dp_ratio
 
     output:
-    tuple val(meta), path("*_freebayes.vcf"), emit: vcf
-    path  "versions.yml"                    , emit: versions
+    tuple val(meta), path(output), emit: vcf
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def VERSION = '1.0.1'
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}.freebayes.vcf"
+    VERSION = '1.0.1'
     """
     vcffilter \\
         -f "QUAL > $qual_threshold & DP > $dp_min & DP < $dp_max & QA > $qa_threshold & SAF > 0 & SAR > 0 & AO > $ao_dp_ratio * DP" \\
         $vcf \\
-        > ${prefix}_freebayes.vcf
+        > $output
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

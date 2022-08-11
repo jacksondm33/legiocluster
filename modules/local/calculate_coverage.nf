@@ -8,7 +8,7 @@ process CALCULATE_COVERAGE {
         'python-legiocluster:latest' }"
 
     input:
-    tuple val(meta), path(reads), path(fastqc_results)
+    tuple val(meta), path(reads), path(fastqc)
     val med_genome_len
 
     output:
@@ -23,7 +23,7 @@ process CALCULATE_COVERAGE {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_coverage_report.txt"
+    report    = "${prefix}.coverage_report.txt"
     log_file  = "${prefix}.log"
 
     template 'calculate_coverage.py'

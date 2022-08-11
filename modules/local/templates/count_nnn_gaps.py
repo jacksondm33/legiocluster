@@ -162,10 +162,8 @@ def write_report(report_file, lo_depth_stats, MIN_DEPTH, GAP_LENGTH):
               + ' bases:', sum(lo_gap_lens), file=report)
 
         # placeholders for images in html file
-        suffix = '' # TODO: replace this
-        print('Figure: Read depth per base' + suffix + ' (plot)', file=report)
-        print('Figure: Read depth per base' + suffix + ' (histogram)',\
-              file=report)
+        print('Figure: Read depth per base (plot)', file=report)
+        print('Figure: Read depth per base (histogram)', file=report)
 
 
 def write_log(MIN_DEPTH, GAP_LENGTH, INTERVAL):

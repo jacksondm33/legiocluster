@@ -11,25 +11,23 @@ process SAMTOOLS_SORT {
     tuple val(meta), path(sam)
 
     output:
-    tuple val(meta), path("*.bam"), emit: bam
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output), emit: bam
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}_${meta.ref}"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}.${meta.ref}"
+    output = "${prefix}.bam"
     """
-    samtools \\
-        sort \\
+    samtools sort \\
         -@ $task.cpus \\
-        -o ${prefix}.bam \\
+        -o $output \\
         -T $prefix \\
         $args \\
-        $sam \\
-        > ${prefix}.log
+        $sam
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

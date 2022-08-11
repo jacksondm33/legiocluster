@@ -11,15 +11,16 @@ process CHECK_INPUT {
     val references
 
     output:
-    path input_valid   , emit: csv
+    path valid_input   , emit: csv
+    path log_file      , emit: log
     path "versions.yml", emit: versions
 
     script:
     prefix = task.ext.prefix ?: references ? "references" : "samples"
 
-    log_level         = "INFO"
-    input_valid       = "${prefix}_valid.csv"
-    log_file          = "${prefix}.log"
+    log_level   = "INFO"
+    valid_input = "${prefix}.valid.csv"
+    log_file    = "${prefix}.log"
 
     template 'check_input.py'
 }

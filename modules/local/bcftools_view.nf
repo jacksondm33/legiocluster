@@ -11,23 +11,21 @@ process BCFTOOLS_VIEW {
     tuple val(meta), path(bcf)
 
     output:
-    tuple val(meta), path("*.vcf"), emit: vcf
-    tuple val(meta), path("*.log"), emit: log
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path(output), emit: vcf
+    path  "versions.yml"         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}_${meta.ref}"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}.${meta.ref}"
+    output = "${prefix}.vcf"
     """
     bcftools view \\
-        --threads $task.cpus \\
-        -o ${prefix}.vcf \\
+        -o $output \\
         $args \\
-        $bcf \\
-        > ${prefix}.log
+        $bcf
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -11,7 +11,7 @@ process REMOVE_INNER_LABELS {
     tuple val(meta), path(svg)
 
     output:
-    tuple val(meta), path(output)  , emit: no_labels_svg
+    tuple val(meta), path(output)  , emit: no_inner_labels_svg
     tuple val(meta), path(log_file), emit: log
     path  "versions.yml"           , emit: versions
 
@@ -21,9 +21,9 @@ process REMOVE_INNER_LABELS {
     script:
     prefix = task.ext.prefix ?: "${meta.ref}"
 
-    log_level    = "INFO"
-    output       = "${prefix}_parsnp_tree.svg"
-    log_file     = "${prefix}.log"
+    log_level = "INFO"
+    output    = "${prefix}.parsnp_tree.svg"
+    log_file  = "${prefix}.log"
 
     template 'remove_inner_labels.py'
 }

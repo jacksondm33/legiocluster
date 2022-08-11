@@ -1,7 +1,7 @@
-include { CONCATENATE       } from '../../modules/local/concatenate'
-include { MASH_SKETCH       } from '../../modules/local/mash_sketch'
-include { MASH_DIST         } from '../../modules/local/mash_dist'
-include { PARSE_MASH_OUTPUT } from '../../modules/local/parse_mash_output'
+include { CONCATENATE                               } from '../../modules/local/concatenate'
+include { MASH_SKETCH as MASH_SKETCH_FQ             } from '../../modules/local/mash_sketch'
+include { MASH_DIST as MASH_DIST_FQ                 } from '../../modules/local/mash_dist'
+include { PARSE_MASH_OUTPUT as PARSE_MASH_OUTPUT_FQ } from '../../modules/local/parse_mash_output'
 
 workflow MASH_FQ {
     take:
@@ -16,18 +16,16 @@ workflow MASH_FQ {
         reads
     )
 
-    MASH_SKETCH (
-        CONCATENATE.out.cat,
-        'comb_reads'
+    MASH_SKETCH_FQ (
+        CONCATENATE.out.cat
     )
 
-    MASH_DIST (
-        MASH_SKETCH.out.mash.join(mash),
-        'RvSp'
+    MASH_DIST_FQ (
+        MASH_SKETCH_FQ.out.mash.join(mash)
     )
 
-    PARSE_MASH_OUTPUT (
-        MASH_DIST.out.dist,
+    PARSE_MASH_OUTPUT_FQ (
+        MASH_DIST_FQ.out.dist,
         Channel.fromList(
             params.genomes
                 .collect {
@@ -36,17 +34,16 @@ workflow MASH_FQ {
                 })
             .collectFile(name: "species.csv", newLine: true, sort: true)
             .first(),
-        params.genome,
-        'RvSp'
+        params.genome
     )
 
     // Collect reports
-    ch_reports = ch_reports.concat(PARSE_MASH_OUTPUT.out.report)
+    ch_reports = ch_reports.concat(PARSE_MASH_OUTPUT_FQ.out.report)
 
     // Collect versions
-    ch_versions = ch_versions.mix(MASH_SKETCH.out.versions)
-    ch_versions = ch_versions.mix(MASH_DIST.out.versions)
-    ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT.out.versions)
+    ch_versions = ch_versions.mix(MASH_SKETCH_FQ.out.versions)
+    ch_versions = ch_versions.mix(MASH_DIST_FQ.out.versions)
+    ch_versions = ch_versions.mix(PARSE_MASH_OUTPUT_FQ.out.versions)
 
     emit:
     reports = ch_reports

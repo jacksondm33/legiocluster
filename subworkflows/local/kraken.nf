@@ -15,7 +15,7 @@ workflow KRAKEN {
     )
 
     PARSE_KRAKEN_OUTPUT (
-        KRAKEN_MODULE.out.results.join(fasta),
+        KRAKEN_MODULE.out.kraken.join(fasta),
         params.genomes.get(params.genome).binomial.tokenize()[0]
     )
 

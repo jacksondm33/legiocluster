@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-"""Create SNP cons fa."""
+"""Make SNP cons fa."""
 
 
 import csv
@@ -77,7 +77,7 @@ def write_ref_seq(snp_cons_file, reference, lo_bases):
             print(base[2], file=outfile)
 
 
-def create_snp_cons_fa(reference_file, snp_cons_file, reference):
+def make_snp_cons_fa(reference_file, snp_cons_file, reference):
     """
     main function
     param: str isolate = isolate name, e.g.: 'IDR001234'
@@ -105,5 +105,5 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(create_snp_cons_fa("$fasta", "$snp_cons", "$meta.ref"))
+    sys.exit(make_snp_cons_fa("$fasta", "$snp_cons", "$meta.ref"))
 

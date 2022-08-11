@@ -9,32 +9,30 @@ process TRIMMOMATIC {
 
     input:
     tuple val(meta), path(reads)
-    path "NexteraPE-PE.fa"
+    path adapters
 
     output:
-    tuple val(meta), path("*_paired_[12].fastq")  , emit: trimmed_reads
-    tuple val(meta), path("*_unpaired_[12].fastq"), emit: unpaired_reads
-    tuple val(meta), path("*.log")                , emit: log
-    path  "versions.yml"                          , emit: versions
+    tuple val(meta), path("${prefix}.paired_[12].fastq")  , emit: paired_reads
+    tuple val(meta), path("${prefix}.unpaired_[12].fastq"), emit: unpaired_reads
+    tuple val(meta), path("${prefix}.log")                , emit: log
+    path  "versions.yml"                                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def trimmed = meta.single_end ? "SE" : "PE"
-    def output = "${prefix}_paired_1.fastq ${prefix}_unpaired_1.fastq ${prefix}_paired_2.fastq ${prefix}_unpaired_2.fastq"
-    def qual_trim = task.ext.args2 ?: ''
+    args = task.ext.args ?: ''
+    args2 = task.ext.args2 ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}.paired_1.fastq ${prefix}.unpaired_1.fastq ${prefix}.paired_2.fastq ${prefix}.unpaired_2.fastq"
     """
-    trimmomatic \\
-        $trimmed \\
+    trimmomatic PE \\
         -threads $task.cpus \\
         -trimlog ${prefix}.log \\
         $args \\
         $reads \\
         $output \\
-        $qual_trim
+        $args2
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

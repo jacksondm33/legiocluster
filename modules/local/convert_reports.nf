@@ -11,7 +11,7 @@ process CONVERT_REPORTS {
     tuple val(meta), path(reports)
 
     output:
-    tuple val(meta), path("${prefix}_*.html"), emit: html
+    tuple val(meta), path("${prefix}.*.html"), emit: html
     tuple val(meta), path(log_file)          , emit: log
     path  "versions.yml"                     , emit: versions
 
@@ -21,8 +21,8 @@ process CONVERT_REPORTS {
     script:
     prefix = task.ext.prefix ?: "${meta.id}"
 
-    log_level    = "INFO"
-    log_file     = "${prefix}.log"
+    log_level = "INFO"
+    log_file  = "${prefix}.log"
 
     template 'convert_reports.py'
 }

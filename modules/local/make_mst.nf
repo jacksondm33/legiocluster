@@ -9,7 +9,6 @@ process MAKE_MST {
 
     input:
     tuple val(meta), path(concat_pairwise_diffs)
-    val abr
     val genome
 
     output:
@@ -23,11 +22,12 @@ process MAKE_MST {
 
     script:
     prefix = task.ext.prefix ?: "${meta.ref}"
+    suffix = task.ext.suffix ?: 'ME'
 
     log_level = "INFO"
-    mst       = "${prefix}_MST_${abr}.png"
-    report    = "${prefix}_mst_report.txt"
-    log_file  = "${prefix}.log"
+    mst       = "${prefix}.MST_${suffix}.png"
+    report    = "${prefix}.MST_${suffix}_report.txt"
+    log_file  = "${prefix}.MST_${suffix}.log"
 
     template 'make_mst.py'
 }

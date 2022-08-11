@@ -24,7 +24,7 @@ ch_genomes_mash = Channel.fromPath(params.genomes_mash)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-ch_multiqc_config = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
+ch_multiqc_config = Channel.fromPath("${projectDir}/assets/multiqc_config.yml", checkIfExists: true)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,12 +33,13 @@ ch_multiqc_config = Channel.fromPath("$projectDir/assets/multiqc_config.yml", ch
 */
 
 // Modules
-include { CREATE_SNP_CONS             } from '../modules/local/create_snp_cons'
-include { COMPARE_SNPS                } from '../modules/local/compare_snps'
-include { CHECK_REF_QUAL              } from '../modules/local/check_ref_qual'
-include { CONVERT_REPORTS             } from '../modules/local/convert_reports'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/local/custom_dumpsoftwareversions'
-include { MULTIQC                     } from '../modules/local/multiqc'
+include { MASH_SKETCH as MASH_SKETCH_SPECIES } from '../modules/local/mash_sketch'
+include { MAKE_SNP_CONS                      } from '../modules/local/make_snp_cons'
+include { COMPARE_SNPS                       } from '../modules/local/compare_snps'
+include { CHECK_REF_QUAL                     } from '../modules/local/check_ref_qual'
+include { CONVERT_REPORTS                    } from '../modules/local/convert_reports'
+include { MAKE_SOFTWARE_VERSIONS             } from '../modules/local/make_software_versions'
+include { MULTIQC                            } from '../modules/local/multiqc'
 
 // Subworkflows
 include { CHECK_INPUT    } from '../subworkflows/local/check_input'
@@ -293,8 +294,8 @@ workflow LEGIOCLUSTER {
         }
         .set { ch_freebayes_close }
 
-    // Create SNP consensus
-    CREATE_SNP_CONS (
+    // Make SNP consensus
+    MAKE_SNP_CONS (
         ch_freebayes_close.fasta
             .join(ch_freebayes_close.mpileup)
             .join(ch_freebayes_close.freebayes)
@@ -314,7 +315,7 @@ workflow LEGIOCLUSTER {
         )
         .groupTuple()
         .cross(
-            CREATE_SNP_CONS.out.snp_cons
+            MAKE_SNP_CONS.out.snp_cons
         ) { it[0].ref }
         .groupTuple()
         .map { [ it[1], it[1].collect { it[1] } + it[0][1] ] }
@@ -480,7 +481,7 @@ workflow LEGIOCLUSTER {
     ch_freebayes_close.filtered_contigs
         .mix(CHECK_INPUT.out.cluster_fasta)
         .join(
-            CREATE_SNP_CONS.out.snp_cons
+            MAKE_SNP_CONS.out.snp_cons
                 .mix(CHECK_INPUT.out.cluster_snp_cons)
         )
         .map {
@@ -529,8 +530,8 @@ workflow LEGIOCLUSTER {
     ch_versions = ch_versions.mix(QUALIMAP.out.versions)
     ch_versions = ch_versions.mix(FREEBAYES.out.versions)
 
-    // Dump versions
-    CUSTOM_DUMPSOFTWAREVERSIONS (
+    // Make software versions
+    MAKE_SOFTWARE_VERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
 
@@ -541,7 +542,7 @@ workflow LEGIOCLUSTER {
     ch_multiqc_files = Channel.empty()
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(MAKE_SOFTWARE_VERSIONS.out.mqc_yml.collect())
     ch_multiqc_files = ch_multiqc_files.mix(CONVERT_REPORTS.out.html.collect { it[1] }.ifEmpty([]))
 
     MULTIQC (

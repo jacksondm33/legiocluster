@@ -1,4 +1,4 @@
-process EXTRACT_FASTQC_RESULTS {
+process PARSE_FASTQC_OUTPUT {
     tag "$meta.id"
     label 'process_medium'
 
@@ -8,7 +8,7 @@ process EXTRACT_FASTQC_RESULTS {
         'python-legiocluster:latest' }"
 
     input:
-    tuple val(meta), path(fastqc_results), path(reads)
+    tuple val(meta), path(fastqc), path(reads)
 
     output:
     tuple val(meta), path(report)  , emit: report
@@ -22,8 +22,8 @@ process EXTRACT_FASTQC_RESULTS {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_fastqc_report.txt"
+    report    = "${prefix}.fastqc_report.txt"
     log_file  = "${prefix}.log"
 
-    template 'extract_fastqc_results.py'
+    template 'parse_fastqc_output.py'
 }

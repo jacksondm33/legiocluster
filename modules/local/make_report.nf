@@ -1,4 +1,4 @@
-process CREATE_REPORT {
+process MAKE_REPORT {
     tag "$meta.id"
     label 'process_low'
 
@@ -8,7 +8,7 @@ process CREATE_REPORT {
         'ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path("report_???.txt"), path(reads)
+    tuple val(meta), path(reports), path(reads)
     val genome
 
     output:
@@ -20,9 +20,7 @@ process CREATE_REPORT {
     script:
     args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
-
-    output = "${prefix}_report.txt"
-
+    output = "${prefix}.report.txt"
     """
     cat <<EOF > $output
     REPORT
@@ -40,7 +38,7 @@ process CREATE_REPORT {
     EOF
     cat \\
         $args \\
-        report_???.txt \\
+        $reports \\
         >> $output
     """
 }

@@ -7,7 +7,7 @@ process MULTIQC {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    path multiqc_files
+    path multiqc
 
     output:
     path "*multiqc_report.html", emit: report
@@ -19,7 +19,7 @@ process MULTIQC {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    args = task.ext.args ?: ''
     """
     multiqc -f $args .
 

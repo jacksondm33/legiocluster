@@ -14,7 +14,7 @@ workflow BWA {
     take:
     reads            // channel: [ meta(id, ref), [ reads ]        ]
     fasta            // channel: [ meta(id, ref), fasta            ]
-    index            // channel: [ meta(id, ref), index            ]
+    bwa              // channel: [ meta(id, ref), bwa              ]
     fai              // channel: [ meta(id, ref), fai              ]
     mapped_threshold // channel: [ meta(id, ref), mapped_threshold ]
 
@@ -23,7 +23,7 @@ workflow BWA {
     ch_versions = Channel.empty()
 
     BWA_MEM (
-        reads.join(index)
+        reads.join(bwa)
     )
 
     SAMTOOLS_SORT (
@@ -39,11 +39,11 @@ workflow BWA {
     )
 
     SAMTOOLS_INDEX_MARKED (
-        PICARD_MARKDUPLICATES.out.bam
+        PICARD_MARKDUPLICATES.out.marked_bam
     )
 
     BCFTOOLS_MPILEUP (
-        PICARD_MARKDUPLICATES.out.bam
+        PICARD_MARKDUPLICATES.out.marked_bam
             .join(fasta)
             .join(fai)
     )
@@ -53,15 +53,15 @@ workflow BWA {
     )
 
     SAMTOOLS_FLAGSTAT (
-        PICARD_MARKDUPLICATES.out.bam.join(SAMTOOLS_INDEX_MARKED.out.bai)
+        PICARD_MARKDUPLICATES.out.marked_bam.join(SAMTOOLS_INDEX_MARKED.out.bai)
     )
 
     SAMTOOLS_IDXSTATS (
-        PICARD_MARKDUPLICATES.out.bam.join(SAMTOOLS_INDEX_MARKED.out.bai)
+        PICARD_MARKDUPLICATES.out.marked_bam.join(SAMTOOLS_INDEX_MARKED.out.bai)
     )
 
     SAMTOOLS_DEPTH (
-        PICARD_MARKDUPLICATES.out.bam
+        PICARD_MARKDUPLICATES.out.marked_bam
     )
 
     PARSE_BWA_OUTPUT (
@@ -102,7 +102,7 @@ workflow BWA {
     emit:
     percent_mapped = ch_percent_mapped
     depth = SAMTOOLS_DEPTH.out.depth
-    bam = PICARD_MARKDUPLICATES.out.bam
+    bam = PICARD_MARKDUPLICATES.out.marked_bam
     mpileup = BCFTOOLS_VIEW.out.vcf
     reports = ch_reports
     versions = ch_versions // channel: [ versions.yml ]

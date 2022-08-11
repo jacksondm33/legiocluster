@@ -1,7 +1,6 @@
-process CUSTOM_DUMPSOFTWAREVERSIONS {
+process MAKE_SOFTWARE_VERSIONS {
     label 'process_low'
 
-    // Requires `pyyaml` which does not have a dedicated container but is in the MultiQC container
     conda (params.enable_conda ? 'bioconda::python=3.10' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'python-legiocluster:latest' :
@@ -19,6 +18,5 @@ process CUSTOM_DUMPSOFTWAREVERSIONS {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    template 'dumpsoftwareversions.py'
+    template 'make_software_versions.py'
 }

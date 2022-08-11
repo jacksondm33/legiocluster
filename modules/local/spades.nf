@@ -11,18 +11,18 @@ process SPADES {
     tuple val(meta), path(reads), val(max_read_len)
 
     output:
-    tuple val(meta), path('*_contigs.fa'), emit: contigs
-    tuple val(meta), path('*.log')       , emit: log
-    path  "versions.yml"                 , emit: versions
+    tuple val(meta), path("${prefix}.SPAdes_contigs.fa"), emit: contigs
+    tuple val(meta), path("${prefix}.log")              , emit: log
+    path  "versions.yml"                                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def maxmem = task.memory.toGiga()
-    def k_param = max_read_len > 175 ? '-k 21,33,55,77,99,127' : '-k 21,33,55,77'
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    maxmem = task.memory.toGiga()
+    k_param = max_read_len > 175 ? '-k 21,33,55,77,99,127' : '-k 21,33,55,77'
     """
     spades.py \\
         --threads $task.cpus \\
@@ -33,8 +33,8 @@ process SPADES {
         $k_param \\
         $args
 
+    mv contigs.fasta ${prefix}.SPAdes_contigs.fa
     mv spades.log ${prefix}.log
-    mv contigs.fasta ${prefix}_SPAdes_contigs.fa
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

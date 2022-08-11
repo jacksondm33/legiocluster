@@ -22,7 +22,7 @@ process PARSE_QUALIMAP_OUTPUT {
     prefix = task.ext.prefix ?: "${meta.id}"
 
     log_level = "INFO"
-    report    = "${prefix}_qualimap_report.txt"
+    report    = "${prefix}.qualimap_report.txt"
     log_file  = "${prefix}.log"
 
     template 'parse_qualimap_output.py'

@@ -11,7 +11,6 @@ process PARSE_MASH_OUTPUT {
     tuple val(meta), path(dist)
     path species
     val genome
-    val suffix
 
     output:
     tuple val(meta), path(fastas)  , emit: fastas
@@ -24,11 +23,12 @@ process PARSE_MASH_OUTPUT {
 
     script:
     prefix = task.ext.prefix ?: "${meta.id}"
+    suffix = task.ext.suffix ?: 'mash'
 
     log_level = "INFO"
-    fastas    = "${prefix}_fastas.csv"
-    report    = "${prefix}_mash_${suffix}_report.txt"
-    log_file  = "${prefix}.log"
+    fastas    = "${prefix}.${suffix}_fastas.csv"
+    report    = "${prefix}.${suffix}_report.txt"
+    log_file  = "${prefix}.${suffix}.log"
 
     template 'parse_mash_output.py'
 }

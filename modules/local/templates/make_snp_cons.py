@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-"""Create SNP cons."""
+"""Make SNP cons."""
 
 
 import csv
@@ -445,7 +445,7 @@ def make_consensus(snp_cons_file, csv_file, isolate, reference, diagnostic_mode=
                             print('N', file=outfile)
 
 
-def create_snp_cons(reference_file, mpileup_file, freebayes_file, csv_file, snp_cons_file, isolate, reference):
+def make_snp_cons(reference_file, mpileup_file, freebayes_file, csv_file, snp_cons_file, isolate, reference):
     """
     main function
     param: str isolate = isolate name, e.g.: 'IDR001234'
@@ -482,5 +482,5 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(create_snp_cons("$fasta", "$mpileup", "$freebayes", "$csv", "$snp_cons", "$meta.id", "$meta.ref"))
+    sys.exit(make_snp_cons("$fasta", "$mpileup", "$freebayes", "$output", "$snp_cons", "$meta.id", "$meta.ref"))
 

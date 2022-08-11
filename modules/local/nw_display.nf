@@ -18,10 +18,10 @@ process NW_DISPLAY {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.ref}"
-    def VERSION = '1.6'
-    output = "${prefix}_parsnp_tree_labels.svg"
+    args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.ref}"
+    output = "${prefix}.parsnp_tree_labels.svg"
+    VERSION = '1.6'
     """
     nw_display \\
         $args \\

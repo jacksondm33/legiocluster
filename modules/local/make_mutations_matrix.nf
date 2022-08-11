@@ -26,10 +26,10 @@ process MAKE_MUTATIONS_MATRIX {
     prefix = task.ext.prefix ?: "${meta.ref}"
 
     log_level            = "INFO"
-    snp_matrix           = "${prefix}_SNP_matrix.csv"
-    me_matrix            = "${prefix}_ME_matrix.csv"
-    concat_pairwise_snps = "${prefix}_concat_pairwise_snps.csv"
-    concat_pairwise_mes  = "${prefix}_concat_pairwise_mes.csv"
+    snp_matrix           = "${prefix}.SNP_matrix.csv"
+    me_matrix            = "${prefix}.ME_matrix.csv"
+    concat_pairwise_snps = "${prefix}.concat_pairwise_snps.csv"
+    concat_pairwise_mes  = "${prefix}.concat_pairwise_mes.csv"
     log_file             = "${prefix}.log"
 
     template 'make_mutations_matrix.py'

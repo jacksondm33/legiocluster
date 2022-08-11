@@ -11,25 +11,26 @@ process QUAST {
     tuple val(meta), path(contigs), path(fasta)
 
     output:
-    tuple val(meta), path("${prefix}")  , emit: results
-    tuple val(meta), path("*_quast.txt"), emit: report
-    path  "versions.yml"                , emit: versions
+    tuple val(meta), path(output, type: 'dir')  , emit: quast
+    tuple val(meta), path("${prefix}.quast.txt"), emit: report
+    path  "versions.yml"                        , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}"
     """
     quast.py \\
         -t $task.cpus \\
-        -o $prefix \\
+        -o $output \\
         -r $fasta \\
         $args \\
         $contigs
 
-    ln -s ${prefix}/report.txt ${prefix}_quast.txt
+    cp ${output}/report.txt ${prefix}.quast.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

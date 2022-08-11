@@ -182,4 +182,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(check_input("$input", "$input_valid", "$references" == "true"))
+    sys.exit(check_input("$input", "$valid_input", "$references" == "true"))

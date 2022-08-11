@@ -21,9 +21,9 @@ process PARSE_PARSNP_OUTPUT {
     script:
     prefix = task.ext.prefix ?: "${meta.ref}"
 
-    log_level    = "INFO"
-    report       = "${prefix}_parsnp_report.txt"
-    log_file     = "${prefix}.log"
+    log_level = "INFO"
+    report    = "${prefix}.parsnp_report.txt"
+    log_file  = "${prefix}.log"
 
     template 'parse_parsnp_output.py'
 }

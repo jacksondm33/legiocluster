@@ -18,7 +18,7 @@ process GUNZIP {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    args = task.ext.args ?: ''
     """
     gunzip \\
         -f \\

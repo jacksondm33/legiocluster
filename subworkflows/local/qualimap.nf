@@ -3,7 +3,7 @@ include { PARSE_QUALIMAP_OUTPUT } from '../../modules/local/parse_qualimap_outpu
 
 workflow QUALIMAP {
     take:
-    bam  // channel: [ val(meta), bam ]
+    bam // channel: [ meta(id, ref), bam ]
 
     main:
     ch_reports = Channel.empty()
