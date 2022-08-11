@@ -16,26 +16,4 @@ extra_fn_clean_exts:
   - type: regex_keep
     pattern: "^[^.]*"
 
-custom_data:
-  trimmomatic_report:
-    section_name: "Read pre-processing (Trimmomatic)"
-    description: "Adapters removed, low quality (< Q20) regions removed, short reads (<100) removed, ploy-G (>25) removed\n(*) if trimmed read length > 0"
-    plot_type: "html"
-  fastqc_report:
-    section_name: "Read quality control (FastQC results)"
-    description: ""
-    plot_type: "html"
-  coverage_report:
-    section_name: "Coverage"
-    description: ""
-    plot_type: "html"
-
-sp:
-  trimmomatic_report:
-    fn: "*_trimmomatic_report.html"
-  fastqc_report:
-    fn: "*_fastqc_report.html"
-  coverage_report:
-    fn: "*_coverage_report.html"
-
 export_plots: true

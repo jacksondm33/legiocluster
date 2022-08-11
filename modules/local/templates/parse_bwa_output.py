@@ -41,9 +41,9 @@ def calculate_frag_len(sam_file, report_file):
     with open(report_file, 'a') as report:
         print('\\n\\nGenomic fragments:', file=report)
         print('Smallest fragment:\t', min(lo_frag_lens), file=report)
-        print('Mean length:\t\t', round(np.mean(lo_frag_lens), 2), file=report)
-        print('S.D.:\t\t\t', round(np.std(lo_frag_lens), 2), file=report)
-        print('median:\t\t', np.median(lo_frag_lens), file=report)
+        print('Mean length:\t', round(np.mean(lo_frag_lens), 2), file=report)
+        print('S.D.:\t', round(np.std(lo_frag_lens), 2), file=report)
+        print('median:\t', np.median(lo_frag_lens), file=report)
         print('Largest fragment:\t', max(lo_frag_lens), file=report)
 
 
@@ -51,8 +51,7 @@ def parse_bwa_output(reference_file, sam_file, flagstat_file, idxstats_file, out
     """Parse flagstat file."""
 
     with open(report_file, 'a') as report:
-        print('\\n\\nMapping the query against strain ' + str(reference_file)\
-              + ' (BWA MEM):', file=report)
+        print('\\n\\nMapping the query against strain ' + str(reference_file) + ' (BWA MEM):', file=report)
 
         with open(flagstat_file, 'r') as flagstat:
             flagstat_data = ''.join(flagstat.readlines())

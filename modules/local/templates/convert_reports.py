@@ -14,64 +14,90 @@ from pathlib import Path
 logger = logging.getLogger()
 
 
-def convert_report(report_file, html_file):
+def make_report_html(report_file):
+
+    use_desc = False
+    use_table = False
+    section_name = ''
+    html = []
+
+    with open(report_file, 'r') as infile:
+        for line in infile:
+            line = line.rstrip('\\n')
+            if line == '':
+                continue
+            if section_name == '':
+                section_name = line[:-1]
+                continue
+            if line.count('\t') == 1:
+                if not use_desc:
+                    if use_table:
+                        html.append('</table>')
+                        use_table = False
+                    html.append('<dl class="dl-horizontal" style="width:100%">')
+                    use_desc = True
+                name, desc = line.split('\t')
+                if name.endswith(':'):
+                    name = name[:-1]
+                html.append('<dt>' + name + '</dt><dd>' + desc + '</dd>')
+                continue
+            if line.count('\t') > 1:
+                if not use_table:
+                    if use_desc:
+                        html.append('</dl>')
+                        use_desc = False
+                    html.append('<table class="table" style="width:100%">')
+                    html.append('<tr>')
+                    for element in line.split('\t'):
+                        html.append('<th>' + element + '</th>')
+                    html.append('</tr>')
+                    use_table = True
+                else:
+                    html.append('<tr>')
+                    for element in line.split('\t'):
+                        html.append('<td>' + element + '</td>')
+                    html.append('</tr>')
+                continue
+            if use_table:
+                html.append('</table>')
+                use_table = False
+            elif use_desc:
+                html.append('</dl>')
+                use_desc = False
+            if line.endswith(':'):
+                html.append('<h3>' + line[:-1] + '</h3>')
+            else:
+                html.append('<p>' + line + '</p>')
+
+    return section_name, "\\n".join(html)
+
+
+def convert_report(report_file, mqc_file, report_name):
     """
     Adds a line of text from the report.txt file to the html file.
     param: str work_dir = isolate-specific folder, e.g.: 'WH200812_001259/'
     param: str line = line of text from the report.txt file
     """
 
-    with open(report_file, 'r') as infile:
+    section_name, data = make_report_html(report_file)
 
-        with open(html_file, 'a') as html:
+    report_mqc = {
+        "id": report_name,
+        "section_name": section_name,
+        "plot_type": "html",
+        "data": data,
+    }
 
-            use_desc = False
-            use_table = False
-
-            for line in infile:
-
-                line = line.rstrip('\\n')
-
-                if line.count('\t') == 1:
-                    if not use_desc:
-                        if use_table:
-                            print('</table>', file=html)
-                            use_table = False
-                        print('<dl class="dl-horizontal">', file=html)
-                        use_desc = True
-                    name, desc = line.split('\t')
-                    print('<dt>' + name + '</dt><dd>' + desc + '</dd>', file=html)
-                elif line.count('\t') > 1:
-                    if not use_table:
-                        if use_desc:
-                            print('</dl>', file=html)
-                            use_desc = False
-                        print('<table>', file=html)
-                        print('<tr>', file=html)
-                        for element in line.split('\t'):
-                            print('<th>' + element + '</th>', file=html)
-                        print('</tr>', file=html)
-                        use_table = True
-                    else:
-                        print('<tr>', file=html)
-                        for element in line.split('\t'):
-                            print('<td>' + element + '</td>', file=html)
-                        print('</tr>', file=html)
-                else:
-                    if use_table:
-                        print('</table>', file=html)
-                        use_table = False
-                    elif use_desc:
-                        print('</dl>', file=html)
-                        use_desc = False
-                    print('<p>' + line + '</p>', file=html)
+    with open(mqc_file, 'w') as outfile:
+        yaml.dump(report_mqc, outfile, default_flow_style=False)
 
 
 def convert_reports(lo_reports):
     """Convert reports"""
 
     for report_file in lo_reports:
-        convert_report(report_file, report_file[:-4] + '.html')
+        report_name = report_file[:-4]
+        convert_report(report_file, report_name + '_mqc.yml', report_name)
 
 
 if __name__ == "__main__":

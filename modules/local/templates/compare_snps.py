@@ -283,7 +283,7 @@ def compare_snps(snp_cons_file, lo_cluster_snp_cons, pairwise_diffs_file):
 
     lo_pairwise_diffs = []
 
-    isolate_A = snp_cons_file.split('_SNP_cons.txt')[0]
+    isolate_A = snp_cons_file.split('.SNP_cons.txt')[0]
 
     # extract the genome sequence
     lo_bases_A = get_seq_data(snp_cons_file)
@@ -291,7 +291,7 @@ def compare_snps(snp_cons_file, lo_cluster_snp_cons, pairwise_diffs_file):
     for cluster_snp_cons_file in lo_cluster_snp_cons:
 
         # name of the comparator genome
-        isolate_B = cluster_snp_cons_file.split('_SNP_cons.txt')[0]
+        isolate_B = cluster_snp_cons_file.split('.SNP_cons.txt')[0]
 
         # don't compare the isolate to itself
         if isolate_B != isolate_A:

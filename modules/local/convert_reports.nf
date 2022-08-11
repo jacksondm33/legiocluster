@@ -11,7 +11,7 @@ process CONVERT_REPORTS {
     tuple val(meta), path(reports)
 
     output:
-    tuple val(meta), path("${prefix}.*.html"), emit: html
+    tuple val(meta), path("${prefix}.*.yml") , emit: yml_reports
     tuple val(meta), path(log_file)          , emit: log
     path  "versions.yml"                     , emit: versions
 
