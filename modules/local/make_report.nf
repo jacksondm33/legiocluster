@@ -25,15 +25,15 @@ process MAKE_REPORT {
     cat <<EOF > $output
     REPORT
 
-    LegioCluster version:\t\t${workflow.manifest.version}
-    Date submitted:\t\t${workflow.start.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)}
-    Submitted by:\t\t${workflow.userName}
-    Isolate name:\t\t${meta.id}
-    Species:\t\t${genome}
-    Forward reads:\t\t${reads[0]}
-    Reverse reads:\t\t${reads[1]}
-    Metadata:\t\t
-    Folder name:\t\t${workflow.launchDir}
+    LegioCluster version:\t${workflow.manifest.version}
+    Date submitted:\t${workflow.start.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)}
+    Submitted by:\t${workflow.userName}
+    Isolate name:\t${meta.id}
+    Species:\t${genome}
+    Forward reads:\t${reads[0]}
+    Reverse reads:\t${reads[1]}
+    Metadata:\t
+    Folder name:\t${workflow.launchDir}
 
     EOF
     cat \\

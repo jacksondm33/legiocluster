@@ -25,6 +25,7 @@ ch_genomes_mash = Channel.fromPath(params.genomes_mash)
 */
 
 ch_multiqc_config = Channel.fromPath("${projectDir}/assets/multiqc_config.yml", checkIfExists: true)
+ch_multiqc_summary_config = Channel.fromPath("${projectDir}/assets/multiqc_summary_config.yml", checkIfExists: true)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,7 +40,9 @@ include { COMPARE_SNPS                       } from '../modules/local/compare_sn
 include { CHECK_REF_QUAL                     } from '../modules/local/check_ref_qual'
 include { CONVERT_REPORTS                    } from '../modules/local/convert_reports'
 include { MAKE_SOFTWARE_VERSIONS             } from '../modules/local/make_software_versions'
+include { MAKE_REPORT                        } from '../modules/local/make_report'
 include { MULTIQC                            } from '../modules/local/multiqc'
+include { MULTIQC as MULTIQC_SUMMARY         } from '../modules/local/multiqc'
 
 // Subworkflows
 include { CHECK_INPUT    } from '../subworkflows/local/check_input'
@@ -508,14 +511,32 @@ workflow LEGIOCLUSTER {
     ch_reports = ch_reports.concat(FREEBAYES.out.reports)
     // ch_reports = ch_reports.concat(MAKE_MST.out.reports)
 
+    ch_reports
+        .map {
+            meta, report ->
+            [ meta - [ref: meta.ref], report ]
+        }
+        .groupTuple()
+        .set { ch_make_report }
+
+    // Make report
+    MAKE_REPORT (
+        ch_make_report.join(TRIMMOMATIC.out.reads),
+        params.genome
+    )
+
     // Convert reports
     CONVERT_REPORTS (
-        ch_reports
+        ch_make_report
+    )
+
+    // Make multiqc report
+    MULTIQC (
+        CONVERT_REPORTS.out.yml_reports.combine(ch_multiqc_config)
             .map {
-                meta, report ->
-                [ [id: meta.id], report ]
+                meta, reports, multiqc ->
+                [ meta, reports + [ multiqc ] ]
             }
-            .groupTuple()
     )
 
     // Collect versions
@@ -539,14 +560,14 @@ workflow LEGIOCLUSTER {
     workflow_summary    = WorkflowLegiocluster.paramsSummaryMultiqc(workflow, summary_params)
     ch_workflow_summary = Channel.value(workflow_summary)
 
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_config.collect().ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_summary_config
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(MAKE_SOFTWARE_VERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(CONVERT_REPORTS.out.yml_reports.collect { it[1] }.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(MAKE_SOFTWARE_VERSIONS.out.mqc_yml)
 
-    MULTIQC (
-        ch_multiqc_files.collect()
+    MULTIQC_SUMMARY (
+        ch_multiqc_files
+            .collect()
+            .map { [ [:], it ] }
     )
     multiqc_report = MULTIQC.out.report.toList()
     ch_versions    = ch_versions.mix(MULTIQC.out.versions)

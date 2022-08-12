@@ -47,11 +47,11 @@ def calculate_frag_len(sam_file, report_file):
         print('Largest fragment:\t', max(lo_frag_lens), file=report)
 
 
-def parse_bwa_output(reference_file, sam_file, flagstat_file, idxstats_file, output_file, report_file, MAPPED_THRESHOLD):
+def parse_bwa_output(reference_file, sam_file, flagstat_file, idxstats_file, output_file, report_file, reference, MAPPED_THRESHOLD):
     """Parse flagstat file."""
 
     with open(report_file, 'a') as report:
-        print('\\n\\nMapping the query against strain ' + str(reference_file) + ' (BWA MEM):', file=report)
+        print('\\n\\nMapping the query against strain ' + reference + ' (BWA MEM):', file=report)
 
         with open(flagstat_file, 'r') as flagstat:
             flagstat_data = ''.join(flagstat.readlines())
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     with open("versions.yml", "w") as f:
         yaml.dump(versions, f, default_flow_style=False)
 
-    sys.exit(parse_bwa_output("$fasta", "$sam", "$flagstat", "$idxstats", "$output", "$report", float("$mapped_threshold")))
+    sys.exit(parse_bwa_output("$fasta", "$sam", "$flagstat", "$idxstats", "$output", "$report", "$meta.ref", float("$mapped_threshold")))

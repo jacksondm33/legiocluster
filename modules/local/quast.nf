@@ -30,7 +30,7 @@ process QUAST {
         $args \\
         $contigs
 
-    cp ${output}/report.txt ${prefix}.quast.txt
+    cp ${output}/report.tsv ${prefix}.quast.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

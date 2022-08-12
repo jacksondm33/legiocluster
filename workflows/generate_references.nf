@@ -27,7 +27,9 @@ include { COMPARE_SNPS                       } from '../modules/local/compare_sn
 include { CHECK_REF_QUAL                     } from '../modules/local/check_ref_qual'
 include { CONVERT_REPORTS                    } from '../modules/local/convert_reports'
 include { MAKE_SOFTWARE_VERSIONS             } from '../modules/local/make_software_versions'
+include { MAKE_REPORT                        } from '../modules/local/make_report'
 include { MULTIQC                            } from '../modules/local/multiqc'
+include { MULTIQC as MULTIQC_SUMMARY         } from '../modules/local/multiqc'
 
 // Subworkflows
 include { CHECK_INPUT    } from '../subworkflows/local/check_input'

@@ -27,8 +27,7 @@ def parse_quast_output(contigs_file, quast_report_file, report_file, CONTIG_THRE
 
     # adds a header to '_report.txt'
     with open(report_file, 'a') as report:
-        print('\\n\\nAssembly quality check (Quast results) for', \
-              str(contigs_file) + ':', file=report)
+        print('\\n\\nAssembly quality check (Quast results):', file=report)
 
         # opens the report from Quast and writes data to report file
         with open(quast_report_file, mode='r') as in_file:

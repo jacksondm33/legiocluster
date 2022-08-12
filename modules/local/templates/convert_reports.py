@@ -34,7 +34,7 @@ def make_report_html(report_file):
                     if use_table:
                         html.append('</table>')
                         use_table = False
-                    html.append('<dl class="dl-horizontal" style="width:100%">')
+                    html.append('<dl>')
                     use_desc = True
                 name, desc = line.split('\t')
                 if name.endswith(':'):
@@ -46,7 +46,7 @@ def make_report_html(report_file):
                     if use_desc:
                         html.append('</dl>')
                         use_desc = False
-                    html.append('<table class="table" style="width:100%">')
+                    html.append('<table class="table">')
                     html.append('<tr>')
                     for element in line.split('\t'):
                         html.append('<th>' + element + '</th>')
@@ -96,8 +96,8 @@ def convert_reports(lo_reports):
     """Convert reports"""
 
     for report_file in lo_reports:
-        report_name = report_file[:-4]
-        convert_report(report_file, report_name + '_mqc.yml', report_name)
+        report_name = report_file.split('.')[-2]
+        convert_report(report_file, report_file[:-4] + '_mqc.yml', report_name)
 
 
 if __name__ == "__main__":

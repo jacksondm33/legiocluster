@@ -126,40 +126,40 @@ def write_report(report_file, lo_depth_stats, MIN_DEPTH, GAP_LENGTH):
 
         print('\\nAlignment QC (Samtools depth):', file=report)
 
-        print('Total number of bases: ' + str(count_all), file=report)
+        print('Total number of bases:\t' + str(count_all), file=report)
         print('Number (percent) of bases with read depth < '\
-              + str(MIN_DEPTH) + ': \t' + str(count_below)\
+              + str(MIN_DEPTH) + ':\t' + str(count_below)\
               + ' (' + str(percent_below) + '%)', file=report)
         print('Number (percent) of bases with read depth >= '\
               + str(MIN_DEPTH) + ':\t' + str(count_above)\
               + ' (' + str(percent_above) + '%)', file=report)
 
-        print('Average read depth (S.D.): ' + str(depth_mean) + ' ('\
+        print('Average read depth (S.D.):\t' + str(depth_mean) + ' ('\
               + str(depth_sd) + ')', file=report)
 
         print('Average read depth (S.D., count) for bases with read depth'\
-              + ' >= ' + str(MIN_DEPTH) + ':\t\t'\
-              + str(round(depth_above[0], 2)) + '\t('\
-              + str(round(depth_above[1], 2)) + ',\t'\
+              + ' >= ' + str(MIN_DEPTH) + ':\t'\
+              + str(round(depth_above[0], 2)) + ' ('\
+              + str(round(depth_above[1], 2)) + ', '\
               + str(round(depth_above[2], 2)) + ')', file=report)
         print('Average read depth (S.D., count) for bases with read depth'\
               + ' > 0 and < ' + str(MIN_DEPTH) + ':\t'\
-              + str(round(depth_below[0], 2)) + '\t('\
-              + str(round(depth_below[1], 2)) + ',\t'\
+              + str(round(depth_below[0], 2)) + ' ('\
+              + str(round(depth_below[1], 2)) + ', '\
               + str(round(depth_below[2], 2)) + ')', file=report)
         print('Average read depth (S.D., count) for bases with read depth'\
-              + ' == 0:\t\t'\
-              + str(round(depth_zero[0], 2)) + '\t('\
-              + str(round(depth_zero[1], 2)) + ',\t'\
+              + ' == 0:\t'\
+              + str(round(depth_zero[0], 2)) + ' ('\
+              + str(round(depth_zero[1], 2)) + ', '\
               + str(round(depth_zero[2], 2)) + ')', file=report)
 
-        print('Number of gaps >= ' + str(GAP_LENGTH) + ' bases:', no_gaps,\
+        print('Number of gaps >= ' + str(GAP_LENGTH) + ' bases:\t', no_gaps,\
               file=report)
-        print('List of gaps >= ' + str(GAP_LENGTH) + ' bases:',\
+        print('List of gaps >= ' + str(GAP_LENGTH) + ' bases:\t',\
               sorted(lo_gap_lens), file=report)
 
         print('Total number of bases in gaps >= ' + str(GAP_LENGTH)\
-              + ' bases:', sum(lo_gap_lens), file=report)
+              + ' bases:\t', sum(lo_gap_lens), file=report)
 
         # placeholders for images in html file
         print('Figure: Read depth per base (plot)', file=report)

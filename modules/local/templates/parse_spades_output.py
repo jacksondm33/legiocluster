@@ -37,17 +37,17 @@ def write_to_file(report_file, contig_stats, MIN_CONTIG_LEN, MIN_CONTIG_COV):
         print('\\nContig analysis:', file=report)
         print('(min length: ' + str(MIN_CONTIG_LEN) + ' bp, min coverage: '
               + str(MIN_CONTIG_COV) + 'x)', file=report)
-        print('contigs that fail both thresholds: ',
+        print('contigs that fail both thresholds:\t',
               round(a*100/no_contigs, 2), '%', file=report)
         if (a*100/no_contigs) > 20:
             print('WARNING: The sample seems to be contaminated!', file=report)
         elif (a*100/no_contigs) > 5:
             print('NOTE: The sample might be contaminated!', file=report)
-        print('contigs that are too short or have a low coverage: ',
+        print('contigs that are too short or have a low coverage:\t',
               round(b*100/no_contigs, 2), '%', file=report)
-        print('contigs that meet both thresholds: ',
+        print('contigs that meet both thresholds:\t',
               round(c*100/no_contigs, 2), '%', file=report)
-        print('contigs with a high coverage (> 250x): ',
+        print('contigs with a high coverage (> 250x):\t',
               round(d*100/no_contigs, 2), '%', file=report)
         if (d*100/no_contigs) > 0.5:
             print('NOTE: There might be a plasmid!', file=report)

@@ -25,11 +25,13 @@ def parse_fastqc_output(lo_reads_files, lo_fastqc_results, report_file):
     output: writes basic statistics to the report file
     """
 
+    with open(report_file, 'a') as report:
+        print('\\nRead quality control (FastQC results):', file=report)
+
     for reads_file, fastqc_results in zip(lo_reads_files, lo_fastqc_results):
 
         # extract selected data from the 'fastqc_data.txt' file
         with open(report_file, 'a') as report:
-            print('\\nRead quality control (FastQC results):', file=report)
             # Original name of the file with the raw reads
             print('Results for processed reads from:', reads_file, file=report)
             with open(Path(fastqc_results) / 'fastqc_data.txt', mode='r') as infile_1:

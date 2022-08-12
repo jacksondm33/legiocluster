@@ -53,7 +53,7 @@ def calculate_perc_ge_q30(reads_file, fastqc_results, report_file):
 
     # write to report
     with open(report_file, 'a') as report:
-        print('\\nPercentage of bases with quality score >= Q30 ('\
+        print('\\nPercentage of bases with quality score >= Q30:\t('\
               + str(n_ge_Q30) + ' * 100) / ' + str(n_all) + ' = '\
               + str(perc_ge_Q30) + '\\n', file=report)
 
@@ -85,7 +85,8 @@ def calculate_coverage(reads_file, fastqc_results, report_file, med_genome_len):
     coverage = round((total_seqs * max_seq_len * 2) / med_genome_len, 3)
 
     with open(report_file, 'a') as report:
-        print('\\nCoverage: (' + str(total_seqs) + ' * ' + str(max_seq_len)\
+        print('\\nCoverage (FastQC results):', file=report)
+        print('\\nCoverage:\t(' + str(total_seqs) + ' * ' + str(max_seq_len)\
               + ' * 2) / ' + str(med_genome_len) + ' = ' + str(coverage),
               file=report)
 

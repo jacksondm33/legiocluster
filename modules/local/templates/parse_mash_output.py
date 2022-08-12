@@ -131,15 +131,15 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
             # print reference(s) with smallest distance, then the runner-up
             for i in range(len(lo_sm_dist)):
                 if i < len(lo_sm_dist) - 1:
-                    print('\\nReference with the shortest distance', file=report)
+                    print('\\nReference with the shortest distance:', file=report)
                 else:
-                    print('\\nRunner up', file=report)
+                    print('\\nRunner up:', file=report)
                 # extract data from the Mash_result object
-                print('Strain name:\t\t', lo_sm_dist[i].get_reference(),
+                print('Strain name:\t', lo_sm_dist[i].get_reference(),
                       file=report)
-                print('Mash distance:\t\t', lo_sm_dist[i].get_distance(),
+                print('Mash distance:\t', lo_sm_dist[i].get_distance(),
                       file=report)
-                print('P-value:\t\t', lo_sm_dist[i].get_pvalue(),
+                print('P-value:\t', lo_sm_dist[i].get_pvalue(),
                       file=report)
                 print('Matching hashes:\t', lo_sm_dist[i].get_hashes(),
                       file=report)
@@ -152,12 +152,12 @@ def write_to_file(report_file, lo_refs, lo_sm_dist, header_text, do_species):
                           'or a related species.', file=report)
         # in case there is only one reference
         else:
-            print('\\nReference with the shortest distance', file=report)
-            print('Strain name:\t\t', lo_sm_dist[0].get_reference(),
+            print('\\nReference with the shortest distance:', file=report)
+            print('Strain name:\t', lo_sm_dist[0].get_reference(),
                   file=report)
-            print('Mash distance:\t\t', lo_sm_dist[0].get_distance(),
+            print('Mash distance:\t', lo_sm_dist[0].get_distance(),
                   file=report)
-            print('P-value:\t\t', lo_sm_dist[0].get_pvalue(),
+            print('P-value:\t', lo_sm_dist[0].get_pvalue(),
                   file=report)
             print('Matching hashes:\t', lo_sm_dist[0].get_hashes(),
                   file=report)

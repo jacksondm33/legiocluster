@@ -1,4 +1,5 @@
 process MULTIQC {
+    tag "$meta.id"
     label 'process_medium'
 
     conda (params.enable_conda ? 'bioconda::multiqc=1.12' : null)
@@ -7,21 +8,25 @@ process MULTIQC {
         'quay.io/biocontainers/multiqc:1.12--pyhdfd78af_0' }"
 
     input:
-    path multiqc
+    tuple val(meta), path(multiqc)
 
     output:
-    path "*multiqc_report.html", emit: report
-    path "*_data"              , emit: data
-    path "*_plots"             , optional:true, emit: plots
-    path "versions.yml"        , emit: versions
+    tuple val(meta), path(output), emit: report
+    path "versions.yml"          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    output = "${prefix}.report.html"
     """
-    multiqc -f $args .
+    multiqc \\
+        -f \\
+        -n $output \\
+        $args \\
+        .
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
